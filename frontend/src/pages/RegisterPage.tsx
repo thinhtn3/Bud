@@ -1,10 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { checkDisplayNameAvailable } from '@/lib/api'
 
 export default function RegisterPage() {
   const { register } = useAuth()
 
+  const [displayName, setDisplayName] = useState('')
+  const [nameAvailable, setNameAvailable] = useState<boolean | null>(null)
+  const [nameChecking, setNameChecking] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -12,10 +16,27 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  async function handleDisplayNameBlur() {
+    if (!displayName.trim()) return
+    setNameChecking(true)
+    try {
+      setNameAvailable(await checkDisplayNameAvailable(displayName.trim()))
+    } catch {
+      // silently ignore — submit will re-check
+    } finally {
+      setNameChecking(false)
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
 
+    const trimmedName = displayName.trim()
+    if (trimmedName.length < 2 || trimmedName.length > 30) {
+      setError('Display name must be 2–30 characters')
+      return
+    }
     if (password !== confirm) {
       setError('Passwords do not match')
       return
@@ -25,9 +46,25 @@ export default function RegisterPage() {
       return
     }
 
+    // If user never blurred the field, check now
+    let available = nameAvailable
+    if (available === null) {
+      try {
+        available = await checkDisplayNameAvailable(trimmedName)
+        setNameAvailable(available)
+      } catch {
+        setError('Could not verify display name — please try again')
+        return
+      }
+    }
+    if (!available) {
+      setError('That display name is already taken')
+      return
+    }
+
     setLoading(true)
     try {
-      await register(email, password)
+      await register(email, password, trimmedName)
       setSuccess(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -66,6 +103,33 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="displayName" className="text-sm font-medium text-foreground">
+              Display name
+            </label>
+            <input
+              id="displayName"
+              type="text"
+              autoComplete="username"
+              required
+              value={displayName}
+              onChange={e => { setDisplayName(e.target.value); setNameAvailable(null) }}
+              onBlur={handleDisplayNameBlur}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              placeholder="Your unique display name"
+              disabled={loading}
+            />
+            {nameChecking && (
+              <p className="text-xs text-muted-foreground">Checking…</p>
+            )}
+            {!nameChecking && nameAvailable === true && (
+              <p className="text-xs text-green-500">Name is available</p>
+            )}
+            {!nameChecking && nameAvailable === false && (
+              <p className="text-xs text-destructive">Name is already taken</p>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <label htmlFor="email" className="text-sm font-medium text-foreground">
               Email

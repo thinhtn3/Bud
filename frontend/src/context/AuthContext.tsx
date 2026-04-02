@@ -13,7 +13,7 @@ interface AuthContextValue {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, displayName: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -78,8 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ id: data.user.id, email: data.user.email ?? '' })
   }, [])
 
-  const register = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password })
+  const register = useCallback(async (email: string, password: string, displayName: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: displayName } },
+    })
     if (error) throw new Error(error.message)
     // Supabase sends a confirmation email — user must verify before logging in
   }, [])
