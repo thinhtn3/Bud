@@ -1,32 +1,17 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { checkDisplayNameAvailable } from '@/lib/api'
 
 export default function RegisterPage() {
   const { register } = useAuth()
 
   const [displayName, setDisplayName] = useState('')
-  const [nameAvailable, setNameAvailable] = useState<boolean | null>(null)
-  const [nameChecking, setNameChecking] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
-
-  async function handleDisplayNameBlur() {
-    if (!displayName.trim()) return
-    setNameChecking(true)
-    try {
-      setNameAvailable(await checkDisplayNameAvailable(displayName.trim()))
-    } catch {
-      // silently ignore — submit will re-check
-    } finally {
-      setNameChecking(false)
-    }
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -43,22 +28,6 @@ export default function RegisterPage() {
     }
     if (password.length < 8) {
       setError('Password must be at least 8 characters')
-      return
-    }
-
-    // If user never blurred the field, check now
-    let available = nameAvailable
-    if (available === null) {
-      try {
-        available = await checkDisplayNameAvailable(trimmedName)
-        setNameAvailable(available)
-      } catch {
-        setError('Could not verify display name — please try again')
-        return
-      }
-    }
-    if (!available) {
-      setError('That display name is already taken')
       return
     }
 
@@ -113,21 +82,11 @@ export default function RegisterPage() {
               autoComplete="username"
               required
               value={displayName}
-              onChange={e => { setDisplayName(e.target.value); setNameAvailable(null) }}
-              onBlur={handleDisplayNameBlur}
+              onChange={e => setDisplayName(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               placeholder="Your unique display name"
               disabled={loading}
             />
-            {nameChecking && (
-              <p className="text-xs text-muted-foreground">Checking…</p>
-            )}
-            {!nameChecking && nameAvailable === true && (
-              <p className="text-xs text-green-500">Name is available</p>
-            )}
-            {!nameChecking && nameAvailable === false && (
-              <p className="text-xs text-destructive">Name is already taken</p>
-            )}
           </div>
 
           <div className="space-y-1.5">

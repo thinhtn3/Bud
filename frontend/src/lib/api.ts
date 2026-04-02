@@ -56,14 +56,6 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export async function checkDisplayNameAvailable(name: string): Promise<boolean> {
-  const res = await fetch(
-    `${API_URL}/api/auth/check-display-name?name=${encodeURIComponent(name)}`,
-  )
-  if (!res.ok) throw new Error('Could not check display name')
-  return ((await res.json()) as { available: boolean }).available
-}
-
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) =>
