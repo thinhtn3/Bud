@@ -29,12 +29,11 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		auth.POST("/session", authHandler.SetSession)
 		auth.POST("/session/refresh", authHandler.RefreshSession)
 		auth.DELETE("/session", authHandler.ClearSession)
-		auth.GET("/check-display-name", authHandler.CheckDisplayName)
 	}
 
 	// Protected routes — JWT cookie required
 	api := r.Group("/api", middleware.Auth(cfg.SupabaseJWTSecret))
 	{
-		_ = api // handlers added here in subsequent steps
+		api.GET("/me", authHandler.Me)
 	}
 }

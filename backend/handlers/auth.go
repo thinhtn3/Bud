@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/thinhtn3/bud/models"
 	"github.com/thinhtn3/bud/supabase"
 	"gorm.io/gorm"
@@ -26,28 +25,6 @@ func NewAuthHandler(sb *supabase.Client, db *gorm.DB, jwtSecret string, isProd b
 type setSessionRequest struct {
 	AccessToken  string `json:"access_token" binding:"required"`
 	RefreshToken string `json:"refresh_token" binding:"required"`
-}
-
-// GET /api/auth/check-display-name?name=...
-// Public — no auth required. Returns whether the display name is available.
-func (h *AuthHandler) CheckDisplayName(c *gin.Context) {
-	name := c.Query("name")
-	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
-		return
-	}
-
-	var profile models.Profile
-	err := h.db.Where("display_name = ?", name).First(&profile).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		c.JSON(http.StatusOK, gin.H{"available": true})
-		return
-	}
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not check display name"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"available": false})
 }
 
 // POST /api/auth/session
@@ -102,11 +79,6 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 		}
 		profile = models.Profile{ID: userID, DisplayName: displayName}
 		if err := h.db.Create(&profile).Error; err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				c.JSON(http.StatusConflict, gin.H{"error": "display_name already taken"})
-				return
-			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create profile"})
 			return
 		}
@@ -120,6 +92,14 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 	h.setRefreshTokenCookie(c, req.RefreshToken)
 
 	c.JSON(http.StatusOK, gin.H{"message": "session created"})
+}
+
+// GET /api/me
+// Returns the current user's id and email from the JWT.
+func (h *AuthHandler) Me(c *gin.Context) {
+	userID := c.GetString("userID")
+	email, _ := c.Get("email")
+	c.JSON(http.StatusOK, gin.H{"id": userID, "email": email})
 }
 
 // POST /api/auth/session/refresh
