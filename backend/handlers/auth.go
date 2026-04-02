@@ -1,19 +1,26 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/thinhtn3/bud/models"
 	"github.com/thinhtn3/bud/supabase"
+	"gorm.io/gorm"
 )
 
 type AuthHandler struct {
-	supabase *supabase.Client
-	isProd   bool
+	supabase  *supabase.Client
+	db        *gorm.DB
+	jwtSecret string
+	isProd    bool
 }
 
-func NewAuthHandler(sb *supabase.Client, isProd bool) *AuthHandler {
-	return &AuthHandler{supabase: sb, isProd: isProd}
+func NewAuthHandler(sb *supabase.Client, db *gorm.DB, jwtSecret string, isProd bool) *AuthHandler {
+	return &AuthHandler{supabase: sb, db: db, jwtSecret: jwtSecret, isProd: isProd}
 }
 
 type setSessionRequest struct {
@@ -21,15 +28,93 @@ type setSessionRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+// GET /api/auth/check-display-name?name=...
+// Public — no auth required. Returns whether the display name is available.
+func (h *AuthHandler) CheckDisplayName(c *gin.Context) {
+	name := c.Query("name")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		return
+	}
+
+	var profile models.Profile
+	err := h.db.Where("display_name = ?", name).First(&profile).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusOK, gin.H{"available": true})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not check display name"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"available": false})
+}
+
 // POST /api/auth/session
 // Called by the frontend after a successful Supabase login.
-// Validates the access token and sets HTTP-only cookies.
+// Validates the access token, creates the profile on first login, and sets HTTP-only cookies.
 func (h *AuthHandler) SetSession(c *gin.Context) {
 	var req setSessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "access_token and refresh_token are required"})
 		return
 	}
+
+	// Parse the JWT to extract user identity and metadata
+	token, err := jwt.Parse(req.AccessToken, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(h.jwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid access token"})
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
+		return
+	}
+
+	userID, _ := claims["sub"].(string)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing user id in token"})
+		return
+	}
+
+	// Extract display_name from user_metadata
+	var displayName string
+	if meta, ok := claims["user_metadata"].(map[string]any); ok {
+		displayName, _ = meta["display_name"].(string)
+	}
+
+	// Upsert profile — only create if it doesn't exist yet
+	var profile models.Profile
+	result := h.db.Where(models.Profile{ID: userID}).First(&profile)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		// First login — create the profile
+		if displayName == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "display_name missing — please re-register"})
+			return
+		}
+		profile = models.Profile{ID: userID, DisplayName: displayName}
+		if err := h.db.Create(&profile).Error; err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				c.JSON(http.StatusConflict, gin.H{"error": "display_name already taken"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create profile"})
+			return
+		}
+	} else if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load profile"})
+		return
+	}
+	// Profile already exists — subsequent logins, no action needed
 
 	h.setAccessTokenCookie(c, req.AccessToken)
 	h.setRefreshTokenCookie(c, req.RefreshToken)

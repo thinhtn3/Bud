@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/thinhtn3/bud/config"
+	"github.com/thinhtn3/bud/db"
 	"github.com/thinhtn3/bud/handlers"
 	"github.com/thinhtn3/bud/middleware"
 	"github.com/thinhtn3/bud/supabase"
@@ -20,7 +21,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	sb := supabase.New(cfg.SupabaseURL)
 	isProd := cfg.AppEnv == "production"
 
-	authHandler := handlers.NewAuthHandler(sb, isProd)
+	authHandler := handlers.NewAuthHandler(sb, db.DB, cfg.SupabaseJWTSecret, isProd)
 
 	// Auth routes — no JWT middleware
 	auth := r.Group("/api/auth")
@@ -28,6 +29,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		auth.POST("/session", authHandler.SetSession)
 		auth.POST("/session/refresh", authHandler.RefreshSession)
 		auth.DELETE("/session", authHandler.ClearSession)
+		auth.GET("/check-display-name", authHandler.CheckDisplayName)
 	}
 
 	// Protected routes — JWT cookie required

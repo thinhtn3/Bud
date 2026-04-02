@@ -13,6 +13,7 @@ func main() {
 	cfg := config.Load()
 
 	db.Connect(cfg.DatabaseURL)
+	db.Migrate()
 
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
