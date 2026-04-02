@@ -1,0 +1,15 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+/bud
+*.exe
+
+# Go test cache
+*.test
+*.out
+
+# macOS
+.DS_Store
