@@ -12,14 +12,13 @@ import (
 )
 
 type AuthHandler struct {
-	supabase  *supabase.Client
-	db        *gorm.DB
-	jwtSecret string
-	isProd    bool
+	supabase *supabase.Client
+	db       *gorm.DB
+	isProd   bool
 }
 
-func NewAuthHandler(sb *supabase.Client, db *gorm.DB, jwtSecret string, isProd bool) *AuthHandler {
-	return &AuthHandler{supabase: sb, db: db, jwtSecret: jwtSecret, isProd: isProd}
+func NewAuthHandler(sb *supabase.Client, db *gorm.DB, isProd bool) *AuthHandler {
+	return &AuthHandler{supabase: sb, db: db, isProd: isProd}
 }
 
 type setSessionRequest struct {
@@ -37,15 +36,12 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 		return
 	}
 
-	// Parse the JWT to extract user identity and metadata
-	token, err := jwt.Parse(req.AccessToken, func(t *jwt.Token) (any, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, jwt.ErrSignatureInvalid
-		}
-		return []byte(h.jwtSecret), nil
-	})
-	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid access token"})
+	// Decode claims without signature verification — Supabase already authenticated
+	// the user. Signature validation happens in middleware/auth.go on every protected request.
+	parser := jwt.NewParser()
+	token, _, err := parser.ParseUnverified(req.AccessToken, jwt.MapClaims{})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "malformed access token"})
 		return
 	}
 

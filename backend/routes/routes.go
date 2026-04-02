@@ -21,7 +21,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	sb := supabase.New(cfg.SupabaseURL)
 	isProd := cfg.AppEnv == "production"
 
-	authHandler := handlers.NewAuthHandler(sb, db.DB, cfg.SupabaseJWTSecret, isProd)
+	authHandler := handlers.NewAuthHandler(sb, db.DB, isProd)
 
 	// Auth routes — no JWT middleware
 	auth := r.Group("/api/auth")
