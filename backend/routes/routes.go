@@ -32,7 +32,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	}
 
 	// Protected routes — JWT cookie required
-	api := r.Group("/api", middleware.Auth(cfg.SupabaseJWTSecret))
+	api := r.Group("/api", middleware.Auth(cfg.SupabaseURL))
 	{
 		api.GET("/me", authHandler.Me)
 	}
