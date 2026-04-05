@@ -1,15 +1,28 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
+import type { Transaction } from '@/types'
+import { budStyles } from '@/components/widgets/budStyles'
+import { WidgetGrid, WidgetCell } from '@/components/widgets/WidgetGrid'
+import { WidgetPicker } from '@/components/widgets/WidgetPicker'
+import { SpendingSummaryWidget } from '@/components/widgets/SpendingSummaryWidget'
+import { AddTransactionWidget } from '@/components/widgets/AddTransactionWidget'
+import { RecentTransactionsWidget } from '@/components/widgets/RecentTransactionsWidget'
+import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance } from '@/components/widgets/widgetRegistry'
 
-interface Transaction {
-  id: string
-  type: 'expense' | 'income'
-  name: string
-  description: string | null
-  amount: number
-  date: string
-  category_id: string | null
+const STORAGE_KEY = 'bud-dashboard-widgets'
+
+function loadWidgets(): WidgetInstance[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+}
+
+function saveWidgets(widgets: WidgetInstance[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets))
 }
 
 export default function DashboardPage() {
@@ -17,6 +30,8 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loadingTx, setLoadingTx] = useState(true)
   const [errorTx, setErrorTx] = useState<string | null>(null)
+  const [widgets, setWidgets] = useState<WidgetInstance[]>(loadWidgets)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   useEffect(() => {
     api.get<Transaction[]>('/api/transactions')
@@ -29,195 +44,105 @@ export default function DashboardPage() {
     setTransactions(prev => [tx, ...prev])
   }
 
-  return (
-    <div className="min-h-screen bg-background p-6">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">{user?.display_name}</h1>
-          <p className="text-sm text-muted-foreground">{user?.email}</p>
-        </div>
-        <button
-          onClick={logout}
-          className="rounded-md border border-input px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Sign out
-        </button>
-      </div>
+  const addWidget = useCallback((type: WidgetType) => {
+    const def = WIDGET_REGISTRY.find(d => d.type === type)
+    if (!def) return
+    const instance: WidgetInstance = {
+      id: `${type}-${Date.now()}`,
+      type,
+      cols: def.defaultCols,
+    }
+    setWidgets(prev => {
+      const next = [...prev, instance]
+      saveWidgets(next)
+      return next
+    })
+  }, [])
 
-      {/* Widgets */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <AddTransactionWidget onAdd={handleAdd} />
-        <RecentTransactionsWidget
-          transactions={transactions}
-          loading={loadingTx}
-          error={errorTx}
-        />
-      </div>
-    </div>
-  )
-}
+  const removeWidget = useCallback((id: string) => {
+    setWidgets(prev => {
+      const next = prev.filter(w => w.id !== id)
+      saveWidgets(next)
+      return next
+    })
+  }, [])
 
-// ── Add Transaction Widget ────────────────────────────────────────────────────
-
-function AddTransactionWidget({ onAdd }: { onAdd: (tx: Transaction) => void }) {
-  const { user } = useAuth()
-
-  const [type, setType] = useState<'expense' | 'income'>('expense')
-  const [name, setName] = useState('')
-  const [amount, setAmount] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [categoryId, setCategoryId] = useState('')
-  const [description, setDescription] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-
-    try {
-      const tx = await api.post<Transaction>('/api/transactions', {
-        type,
-        name,
-        amount: parseFloat(amount),
-        date,
-        category_id: categoryId || null,
-        description: description || null,
-      })
-      onAdd(tx)
-      setName('')
-      setAmount('')
-      setDescription('')
-      setCategoryId('')
-      setDate(new Date().toISOString().split('T')[0])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add transaction')
-    } finally {
-      setLoading(false)
+  function renderWidget(w: WidgetInstance) {
+    switch (w.type) {
+      case 'spending_summary':
+        return <SpendingSummaryWidget transactions={transactions} loading={loadingTx} />
+      case 'recent_transactions':
+        return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} />
+      case 'add_transaction':
+        return <AddTransactionWidget onAdd={handleAdd} />
+      default:
+        return null
     }
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      <h2 className="mb-4 text-base font-medium text-foreground">Add Transaction</h2>
+    <>
+      <style>{budStyles}</style>
+      <div className="bud-root">
+        <header className="bud-header">
+          <div>
+            <p className="bud-greeting">Good {getTimeOfDay()}</p>
+            <h1 className="bud-name">{user?.display_name}</h1>
+            <p className="bud-email">{user?.email}</p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {widgets.length > 0 && (
+              <button className="bud-add-widget-btn" onClick={() => setPickerOpen(true)}>
+                + Add Widget
+              </button>
+            )}
+            <button className="bud-signout" onClick={logout}>Sign out</button>
+          </div>
+        </header>
 
-      {/* Type toggle */}
-      <div className="mb-4 flex rounded-md border border-input overflow-hidden">
-        {(['expense', 'income'] as const).map(t => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setType(t)}
-            className={`flex-1 py-1.5 text-sm font-medium transition-colors capitalize
-              ${type === t
-                ? t === 'expense'
-                  ? 'bg-destructive text-destructive-foreground'
-                  : 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-              }`}
-          >
-            {t}
-          </button>
-        ))}
+        {widgets.length === 0 ? (
+          <div className="bud-empty-state">
+            <p className="bud-empty-title">Your dashboard is empty</p>
+            <p className="bud-empty-sub">
+              Add widgets to see your balances, transactions, and spending at a glance.
+            </p>
+            <button className="bud-add-widget-btn-primary" onClick={() => setPickerOpen(true)}>
+              + Add Widget
+            </button>
+          </div>
+        ) : (
+          <WidgetGrid>
+            {widgets.map(w => (
+              <WidgetCell key={w.id} cols={w.cols as 1|2|3|4|5|6|7|8|9|10|11|12}>
+                <div className="bud-widget-wrapper" style={{ position: 'relative', height: '100%' }}>
+                  {renderWidget(w)}
+                  <button
+                    className="bud-widget-remove"
+                    onClick={() => removeWidget(w.id)}
+                    aria-label="Remove widget"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </WidgetCell>
+            ))}
+          </WidgetGrid>
+        )}
+
+        <WidgetPicker
+          open={pickerOpen}
+          activeWidgets={widgets}
+          onAdd={addWidget}
+          onClose={() => setPickerOpen(false)}
+        />
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          required
-          placeholder="Name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-
-        <input
-          required
-          type="number"
-          min="0.01"
-          step="0.01"
-          placeholder="Amount"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-
-        <input
-          required
-          type="date"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-
-        <select
-          value={categoryId}
-          onChange={e => setCategoryId(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">No category</option>
-          {user?.categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
-          ))}
-        </select>
-
-        <input
-          placeholder="Description (optional)"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 transition-colors"
-        >
-          {loading ? 'Adding…' : 'Add'}
-        </button>
-      </form>
-    </div>
+    </>
   )
 }
 
-// ── Recent Transactions Widget ────────────────────────────────────────────────
-
-function RecentTransactionsWidget({
-  transactions,
-  loading,
-  error,
-}: {
-  transactions: Transaction[]
-  loading: boolean
-  error: string | null
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      <h2 className="mb-4 text-base font-medium text-foreground">Recent Transactions</h2>
-
-      {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      {!loading && !error && transactions.length === 0 && (
-        <p className="text-sm text-muted-foreground">No transactions yet — add your first one.</p>
-      )}
-
-      <ul className="space-y-2">
-        {transactions.map(tx => (
-          <li key={tx.id} className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/50">
-            <div>
-              <p className="text-sm font-medium text-foreground">{tx.name}</p>
-              <p className="text-xs text-muted-foreground">{tx.date}</p>
-            </div>
-            <span className={`text-sm font-semibold ${tx.type === 'income' ? 'text-primary' : 'text-destructive'}`}>
-              {tx.type === 'income' ? '+' : '-'}${tx.amount.toFixed(2)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
+function getTimeOfDay() {
+  const h = new Date().getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
 }
