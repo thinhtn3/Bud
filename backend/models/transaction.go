@@ -11,13 +11,13 @@ const (
 )
 
 type Transaction struct {
-	ID          string          `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID      string          `gorm:"type:uuid;not null;index"`
-	Type        TransactionType `gorm:"type:text;not null"`
-	Name        string          `gorm:"not null"`
-	Description *string         `gorm:"type:text"`
-	Amount      float64         `gorm:"type:decimal(12,2);not null"`
-	Date        time.Time       `gorm:"type:date;not null"`
-	CategoryID  *string         `gorm:"type:uuid"`
-	CreatedAt   time.Time       `gorm:"autoCreateTime"`
+	ID          string          `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID      string          `gorm:"type:uuid;not null;index:idx_transactions_user_date" json:"user_id"`
+	Type        TransactionType `gorm:"type:text;not null" json:"type"`
+	Name        string          `gorm:"not null" json:"name"`
+	Description *string         `gorm:"type:text" json:"description"`
+	Amount      float64         `gorm:"type:decimal(12,2);not null" json:"amount"`
+	Date        time.Time       `gorm:"type:date;not null;index:idx_transactions_user_date,sort:desc" json:"date"`
+	CategoryID  *string         `gorm:"type:uuid" json:"category_id"`
+	CreatedAt   time.Time       `gorm:"autoCreateTime" json:"created_at"`
 }

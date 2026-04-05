@@ -78,8 +78,16 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create profile"})
 			return
 		}
+	} else if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load profile"})
+		return
+	}
 
-		// Seed default categories for the new user
+	// Seed default categories if the user has none — covers new users and
+	// existing users who registered before seeding was introduced.
+	var categoryCount int64
+	h.db.Model(&models.Category{}).Where("user_id = ?", userID).Count(&categoryCount)
+	if categoryCount == 0 {
 		categories := make([]models.Category, len(models.DefaultCategories))
 		for i, name := range models.DefaultCategories {
 			categories[i] = models.Category{UserID: userID, Name: name}
@@ -88,11 +96,7 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not seed categories"})
 			return
 		}
-	} else if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load profile"})
-		return
 	}
-	// Profile already exists — subsequent logins, no action needed
 
 	h.setAccessTokenCookie(c, req.AccessToken)
 	h.setRefreshTokenCookie(c, req.RefreshToken)

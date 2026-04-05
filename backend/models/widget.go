@@ -16,12 +16,12 @@ const (
 )
 
 type Widget struct {
-	ID        string     `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID    string     `gorm:"type:uuid;not null;index"`
-	Type      WidgetType `gorm:"type:text;not null"`
-	PosX      int        `gorm:"not null"`
-	PosY      int        `gorm:"not null"`
-	W         int        `gorm:"not null"`
-	H         int        `gorm:"not null"`
-	CreatedAt time.Time  `gorm:"autoCreateTime"`
+	ID        string     `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID    string     `gorm:"type:uuid;not null;index" json:"user_id"`
+	Type      WidgetType `gorm:"type:text;not null" json:"type"`
+	PosX      int        `gorm:"not null" json:"pos_x"`
+	PosY      int        `gorm:"not null" json:"pos_y"`
+	W         int        `gorm:"not null" json:"w"`
+	H         int        `gorm:"not null" json:"h"`
+	CreatedAt time.Time  `gorm:"autoCreateTime" json:"created_at"`
 }
