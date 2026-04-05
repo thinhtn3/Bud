@@ -11,6 +11,9 @@ import (
 func Migrate() {
 	err := DB.AutoMigrate(
 		&models.Profile{},
+		&models.Category{},
+		&models.Transaction{},
+		&models.Widget{},
 	)
 	if err != nil {
 		log.Fatalf("migration failed: %v", err)
