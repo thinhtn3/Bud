@@ -140,53 +140,122 @@ export const budStyles = `
     margin-bottom: 4px;
   }
 
-  /* ── Spending Summary Widget ──────────────────────────── */
-  .bud-summary-grid {
+  /* ── Stat Cards Row ───────────────────────────────────── */
+  .bud-stat-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
   }
-  .bud-summary-item {
-    padding: 4px 24px 4px 0;
+
+  .bud-stat-card {
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid transparent;
+    transition: filter 0.15s;
   }
-  .bud-summary-item + .bud-summary-item {
-    padding-left: 24px;
-    border-left: 1px solid rgba(255,255,255,0.06);
+  .bud-stat-card:hover { filter: brightness(1.08); }
+
+  .bud-stat-balance { background: rgba(159,232,112,0.05); border-color: rgba(159,232,112,0.13); }
+  .bud-stat-expense  { background: rgba(208,50,56,0.05);  border-color: rgba(208,50,56,0.13);  }
+  .bud-stat-income   { background: rgba(113,112,255,0.05); border-color: rgba(113,112,255,0.13); }
+  .bud-stat-count    { background: rgba(255,209,26,0.05);  border-color: rgba(255,209,26,0.13);  }
+
+  .bud-stat-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
   }
-  .bud-summary-label {
-    font-size: 12px;
-    font-weight: 510;
-    color: #62666d;
-    letter-spacing: -0.13px;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .bud-summary-amount {
-    font-size: 36px;
-    font-weight: 900;
-    letter-spacing: -0.9px;
-    line-height: 1.0;
-    font-variant-numeric: tabular-nums;
-    font-family: 'Berkeley Mono', 'SF Mono', 'Fira Code', 'Courier New', monospace;
-  }
-  .bud-summary-amount.income { color: #9fe870; }
-  .bud-summary-amount.expense { color: #d03238; }
-  .bud-summary-amount.neutral { color: #f7f8f8; }
-  .bud-summary-amount.negative { color: #d03238; }
-  .bud-summary-sub {
-    font-size: 12px;
+
+  .bud-stat-label {
+    font-size: 13px;
     font-weight: 400;
     color: #8a8f98;
-    margin-top: 6px;
     letter-spacing: -0.13px;
   }
 
+  .bud-stat-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .bud-stat-icon-balance { background: rgba(159,232,112,0.14); color: #9fe870; }
+  .bud-stat-icon-expense { background: rgba(208,50,56,0.14);   color: #d03238; }
+  .bud-stat-icon-income  { background: rgba(113,112,255,0.14); color: #7170ff; }
+  .bud-stat-icon-count   { background: rgba(255,209,26,0.14);  color: #ffd11a; }
+
+  .bud-stat-amount {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.7px;
+    line-height: 1.0;
+    font-variant-numeric: tabular-nums;
+    font-family: 'Berkeley Mono', 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    margin-bottom: 6px;
+  }
+  .bud-stat-amount-balance { color: #9fe870; }
+  .bud-stat-amount-expense { color: #d03238; }
+  .bud-stat-amount-income  { color: #7170ff; }
+  .bud-stat-amount-count   { color: #ffd11a; }
+
+  .bud-stat-sub {
+    font-size: 12px;
+    font-weight: 400;
+    color: #62666d;
+    letter-spacing: -0.13px;
+  }
+
+  .bud-stat-skeleton {
+    background: rgba(255,255,255,0.02);
+    border-color: rgba(255,255,255,0.06) !important;
+    height: 108px;
+    animation: bud-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes bud-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+
+  /* ── Period chip selector (inside stat card) ──────────── */
+  .bud-period-chips {
+    display: flex;
+    gap: 3px;
+    margin: 4px 0 12px;
+    flex-wrap: wrap;
+  }
+  .bud-period-chip {
+    font-size: 10px;
+    font-weight: 510;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: transparent;
+    color: #62666d;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-feature-settings: "cv01","ss03";
+    transition: color 0.12s, background 0.12s, border-color 0.12s;
+    line-height: 1.6;
+  }
+  .bud-period-chip:hover { color: #d0d6e0; border-color: rgba(255,255,255,0.14); }
+  .bud-period-chip.active {
+    background: rgba(255,209,26,0.12);
+    border-color: rgba(255,209,26,0.28);
+    color: #ffd11a;
+  }
+
+  @media (max-width: 1024px) {
+    .bud-stat-row { grid-template-columns: repeat(2, 1fr); }
+  }
   @media (max-width: 640px) {
-    .bud-summary-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
-    .bud-summary-item + .bud-summary-item { border-left: none; padding-left: 0; }
-    .bud-summary-item:last-child { grid-column: span 2; }
-    .bud-summary-amount { font-size: 28px; }
+    .bud-stat-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .bud-stat-amount { font-size: 22px; }
   }
 
   /* ── Type Toggle ──────────────────────────────────────── */
