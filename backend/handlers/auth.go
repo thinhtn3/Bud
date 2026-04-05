@@ -78,6 +78,16 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create profile"})
 			return
 		}
+
+		// Seed default categories for the new user
+		categories := make([]models.Category, len(models.DefaultCategories))
+		for i, name := range models.DefaultCategories {
+			categories[i] = models.Category{UserID: userID, Name: name}
+		}
+		if err := h.db.Create(&categories).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not seed categories"})
+			return
+		}
 	} else if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load profile"})
 		return
@@ -87,15 +97,59 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 	h.setAccessTokenCookie(c, req.AccessToken)
 	h.setRefreshTokenCookie(c, req.RefreshToken)
 
-	c.JSON(http.StatusOK, gin.H{"message": "session created"})
+	email, _ := claims["email"].(string)
+	userData, err := h.loadUserData(userID, email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load user data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, userData)
+}
+
+type meResponse struct {
+	ID          string            `json:"id"`
+	Email       string            `json:"email"`
+	DisplayName string            `json:"display_name"`
+	Categories  []models.Category `json:"categories"`
+}
+
+// loadUserData fetches the profile and categories for a given user.
+// Used by both SetSession (on login) and Me (on app load).
+// Widgets are fetched separately by the dashboard — GET /api/dashboard/widgets.
+func (h *AuthHandler) loadUserData(userID, email string) (*meResponse, error) {
+	var profile models.Profile
+	if err := h.db.First(&profile, "id = ?", userID).Error; err != nil {
+		return nil, err
+	}
+
+	var categories []models.Category
+	if err := h.db.Where("user_id = ?", userID).Order("created_at asc").Find(&categories).Error; err != nil {
+		return nil, err
+	}
+
+	return &meResponse{
+		ID:          userID,
+		Email:       email,
+		DisplayName: profile.DisplayName,
+		Categories:  categories,
+	}, nil
 }
 
 // GET /api/me
-// Returns the current user's id and email from the JWT.
+// Returns the current user's profile, categories, and widget layout.
+// Called after succesful login AND subsequent app loads.
 func (h *AuthHandler) Me(c *gin.Context) {
 	userID := c.GetString("userID")
 	email, _ := c.Get("email")
-	c.JSON(http.StatusOK, gin.H{"id": userID, "email": email})
+
+	data, err := h.loadUserData(userID, email.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load user data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, data)
 }
 
 // POST /api/auth/session/refresh
