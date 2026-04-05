@@ -3,10 +3,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
-
-function Dashboard() {
-  return <div className="p-8 text-foreground">Dashboard — coming soon</div>
-}
+import DashboardPage from '@/pages/DashboardPage'
 
 export default function App() {
   return (
@@ -19,7 +16,7 @@ export default function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <DashboardPage />
               </ProtectedRoute>
             }
           />

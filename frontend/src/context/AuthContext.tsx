@@ -4,9 +4,17 @@ import { supabase } from '@/lib/supabase'
 
 const API_URL = import.meta.env.VITE_API_URL as string
 
+interface Category {
+  id: string
+  user_id: string
+  name: string
+}
+
 interface User {
   id: string
   email: string
+  display_name: string
+  categories: Category[]
 }
 
 interface AuthContextValue {
@@ -75,7 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (!res.ok) throw new Error('Failed to create session')
 
-    setUser({ id: data.user.id, email: data.user.email ?? '' })
+    const userData = await res.json() as User
+    setUser(userData)
   }, [])
 
   const register = useCallback(async (email: string, password: string, displayName: string) => {
