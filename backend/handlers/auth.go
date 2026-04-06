@@ -83,21 +83,6 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 		return
 	}
 
-	// Seed default categories if the user has none — covers new users and
-	// existing users who registered before seeding was introduced.
-	var categoryCount int64
-	h.db.Model(&models.Category{}).Where("user_id = ?", userID).Count(&categoryCount)
-	if categoryCount == 0 {
-		categories := make([]models.Category, len(models.DefaultCategories))
-		for i, name := range models.DefaultCategories {
-			categories[i] = models.Category{UserID: userID, Name: name}
-		}
-		if err := h.db.Create(&categories).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not seed categories"})
-			return
-		}
-	}
-
 	h.setAccessTokenCookie(c, req.AccessToken)
 	h.setRefreshTokenCookie(c, req.RefreshToken)
 
@@ -128,7 +113,7 @@ func (h *AuthHandler) loadUserData(userID, email string) (*meResponse, error) {
 	}
 
 	var categories []models.Category
-	if err := h.db.Where("user_id = ?", userID).Order("created_at asc").Find(&categories).Error; err != nil {
+	if err := h.db.Where("user_id = ? OR user_id IS NULL", userID).Order("created_at asc").Find(&categories).Error; err != nil {
 		return nil, err
 	}
 

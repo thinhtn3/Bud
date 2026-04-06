@@ -37,6 +37,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	{
 		api.GET("/me", authHandler.Me)
 
+		api.GET("/transactions/quick-add", transactionHandler.QuickAdd)
 		api.GET("/transactions", transactionHandler.List)
 		api.POST("/transactions", transactionHandler.Create)
 	}

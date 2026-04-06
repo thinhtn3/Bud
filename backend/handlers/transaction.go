@@ -60,6 +60,57 @@ func (h *TransactionHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, tx)
 }
 
+// GET /api/transactions/quick-add
+// Returns recurring transactions (same name+type appearing >1 time) and 5 most recent distinct ones.
+func (h *TransactionHandler) QuickAdd(c *gin.Context) {
+	userID := c.GetString("userID")
+
+	type nameTypePair struct {
+		Name string
+		Type string
+	}
+
+	// Recurring: (name, type) combos appearing more than once
+	var recurringPairs []nameTypePair
+	h.db.Raw(`
+		SELECT name, type
+		FROM transactions
+		WHERE user_id = ?
+		GROUP BY name, type
+		HAVING COUNT(*) > 1
+		ORDER BY COUNT(*) DESC
+		LIMIT 5
+	`, userID).Scan(&recurringPairs)
+
+	// Most recent instance of each recurring combo (as the pre-fill template)
+	recurring := make([]models.Transaction, 0)
+	for _, p := range recurringPairs {
+		var tx models.Transaction
+		if err := h.db.Where("user_id = ? AND name = ? AND type = ?", userID, p.Name, p.Type).
+			Order("date desc, created_at desc").
+			First(&tx).Error; err == nil {
+			recurring = append(recurring, tx)
+		}
+	}
+
+	// Recent: 5 most recent transactions not already covered by recurring
+	recent := make([]models.Transaction, 0)
+	q := h.db.Where("user_id = ?", userID)
+	if len(recurringPairs) > 0 {
+		names := make([]string, len(recurringPairs))
+		for i, p := range recurringPairs {
+			names[i] = p.Name
+		}
+		q = q.Where("name NOT IN ?", names)
+	}
+	q.Order("date desc, created_at desc").Limit(5).Find(&recent)
+
+	c.JSON(http.StatusOK, gin.H{
+		"recurring": recurring,
+		"recent":    recent,
+	})
+}
+
 // GET /api/transactions
 // Optional query params: type, category_id, from (YYYY-MM-DD), to (YYYY-MM-DD)
 func (h *TransactionHandler) List(c *gin.Context) {
