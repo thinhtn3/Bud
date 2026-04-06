@@ -661,6 +661,24 @@ export const budStyles = `
     color: #ffd11a;
   }
 
+  /* ── Budget progress bar ──────────────────────────────── */
+  .bud-budget-bar-wrap {
+    height: 3px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.06);
+    margin: 8px 0 6px;
+    overflow: hidden;
+  }
+  .bud-budget-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: #ffd11a;
+    transition: width 0.4s ease, background 0.2s;
+  }
+  .bud-budget-bar-fill.bud-budget-bar-over {
+    background: #d03238;
+  }
+
   @media (max-width: 1024px) {
     .bud-stat-row { grid-template-columns: repeat(2, 1fr); }
   }

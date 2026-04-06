@@ -24,6 +24,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	authHandler := handlers.NewAuthHandler(sb, db.DB, isProd)
 	transactionHandler := handlers.NewTransactionHandler(db.DB)
 	widgetHandler := handlers.NewWidgetHandler(db.DB)
+	preferencesHandler := handlers.NewPreferencesHandler(db.DB)
 
 	// Auth routes — no JWT middleware
 	auth := r.Group("/api/auth")
@@ -37,6 +38,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	api := r.Group("/api", middleware.Auth(cfg.SupabaseURL))
 	{
 		api.GET("/me", authHandler.Me)
+		api.PUT("/me/preferences", preferencesHandler.SavePreferences)
 
 		api.GET("/dashboard/widgets", widgetHandler.List)
 		api.PUT("/dashboard/widgets", widgetHandler.Save)

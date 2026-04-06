@@ -10,11 +10,22 @@ interface Category {
   name: string
 }
 
+interface UserPreferences {
+  onboarding_completed: boolean
+  budget_period: string
+  budget_amount: number
+  carry_over_excess: boolean
+  monthly_income: number | null
+  currency: string
+  financial_goals: string[]
+}
+
 interface User {
   id: string
   email: string
   display_name: string
   categories: Category[]
+  preferences: UserPreferences
 }
 
 interface AuthContextValue {

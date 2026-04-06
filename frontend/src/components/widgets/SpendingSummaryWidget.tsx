@@ -1,33 +1,31 @@
 import { useState } from 'react'
 import type { Transaction } from '@/types'
 
-type Period = 'week' | 'month' | '30d' | '90d'
+type Period = 'weekly' | 'biweekly' | 'monthly'
 
 const PERIODS: { key: Period; label: string }[] = [
-  { key: 'week',  label: 'This wk' },
-  { key: 'month', label: 'This mo' },
-  { key: '30d',   label: '30d' },
-  { key: '90d',   label: '90d' },
+  { key: 'weekly',   label: 'Weekly' },
+  { key: 'biweekly', label: 'Biweekly' },
+  { key: 'monthly',  label: 'Monthly' },
 ]
 
 function startOfPeriod(period: Period): Date {
   const now = new Date()
-  if (period === 'week') {
+  if (period === 'weekly') {
     const d = new Date(now)
-    const day = d.getDay() // 0 = Sun
+    const day = d.getDay()
     const diff = day === 0 ? 6 : day - 1 // shift so Mon = 0
     d.setDate(d.getDate() - diff)
     d.setHours(0, 0, 0, 0)
     return d
   }
-  if (period === 'month') {
-    return new Date(now.getFullYear(), now.getMonth(), 1)
+  if (period === 'biweekly') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - 14)
+    d.setHours(0, 0, 0, 0)
+    return d
   }
-  const days = period === '30d' ? 30 : 90
-  const d = new Date(now)
-  d.setDate(d.getDate() - days)
-  d.setHours(0, 0, 0, 0)
-  return d
+  return new Date(now.getFullYear(), now.getMonth(), 1)
 }
 
 function filterByPeriod(txs: Transaction[], period: Period): Transaction[] {
@@ -35,21 +33,34 @@ function filterByPeriod(txs: Transaction[], period: Period): Transaction[] {
   return txs.filter(t => new Date(t.date) >= cutoff)
 }
 
+// Simplified conversion: weekly ×2 = biweekly, ×4 = monthly
+function deriveBudget(amount: number, storedPeriod: string, viewPeriod: Period): number {
+  let weekly: number
+  if (storedPeriod === 'weekly')     weekly = amount
+  else if (storedPeriod === 'biweekly') weekly = amount / 2
+  else                               weekly = amount / 4 // monthly
+
+  if (viewPeriod === 'weekly')   return weekly
+  if (viewPeriod === 'biweekly') return weekly * 2
+  return weekly * 4 // monthly
+}
+
 function periodLabel(period: Period): string {
-  if (period === 'week')  return 'this week'
-  if (period === 'month') return 'this month'
-  if (period === '30d')   return 'last 30 days'
-  return 'last 90 days'
+  if (period === 'weekly')   return 'this week'
+  if (period === 'biweekly') return 'last 2 weeks'
+  return 'this month'
 }
 
 interface Props {
   transactions: Transaction[]
   loading: boolean
   size?: 'small' | 'medium' | 'large'
+  budgetAmount?: number
+  budgetPeriod?: string
 }
 
-export function SpendingSummaryWidget({ transactions, loading, size = 'large' }: Props) {
-  const [period, setPeriod] = useState<Period>('week')
+export function SpendingSummaryWidget({ transactions, loading, size = 'large', budgetAmount, budgetPeriod }: Props) {
+  const [period, setPeriod] = useState<Period>('weekly')
 
   const totalIncome   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
@@ -61,6 +72,11 @@ export function SpendingSummaryWidget({ transactions, loading, size = 'large' }:
 
   const incomeCount  = transactions.filter(t => t.type === 'income').length
   const expenseCount = transactions.filter(t => t.type === 'expense').length
+
+  const hasBudget    = !!budgetAmount && budgetAmount > 0 && !!budgetPeriod
+  const periodBudget = hasBudget ? deriveBudget(budgetAmount!, budgetPeriod!, period) : null
+  const budgetPct    = periodBudget ? Math.min(periodExpenses / periodBudget, 1) : null
+  const overBudget   = periodBudget !== null && periodExpenses > periodBudget
 
   function fmt(n: number) {
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -153,8 +169,24 @@ export function SpendingSummaryWidget({ transactions, loading, size = 'large' }:
             </button>
           ))}
         </div>
-        <p className="bud-stat-amount bud-stat-amount-count">−${fmt(periodExpenses)}</p>
-        <p className="bud-stat-sub">{periodCount} expense{periodCount !== 1 ? 's' : ''} · {periodLabel(period)}</p>
+        <p className={`bud-stat-amount ${overBudget ? 'bud-stat-amount-expense' : 'bud-stat-amount-count'}`}>
+          −${fmt(periodExpenses)}
+        </p>
+        {periodBudget !== null ? (
+          <>
+            <div className="bud-budget-bar-wrap">
+              <div
+                className={`bud-budget-bar-fill ${overBudget ? 'bud-budget-bar-over' : ''}`}
+                style={{ width: `${(budgetPct! * 100).toFixed(1)}%` }}
+              />
+            </div>
+            <p className="bud-stat-sub">
+              {overBudget ? 'over budget · ' : ''}of ${fmt(periodBudget)} · {periodCount} expense{periodCount !== 1 ? 's' : ''} · {periodLabel(period)}
+            </p>
+          </>
+        ) : (
+          <p className="bud-stat-sub">{periodCount} expense{periodCount !== 1 ? 's' : ''} · {periodLabel(period)}</p>
+        )}
       </div>
 
     </div>

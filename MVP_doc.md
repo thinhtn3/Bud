@@ -299,6 +299,7 @@ Debts
 | Push notifications | Mobile alerts for new splits |
 | Export (CSV/PDF) | Transaction history export |
 | OAuth login | Google / Apple Sign In |
+| **Native app** | Full native mobile version of Bud — bank statement uploads (PDF/CSV), Plaid account linking for automatic transaction sync, and a swipe-to-review transaction flow (swipe through each imported transaction to confirm or adjust category/amount before it lands in the ledger) |
 
 ---
 

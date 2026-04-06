@@ -146,7 +146,13 @@ export default function DashboardPage() {
   function renderWidget(w: WidgetInstance) {
     switch (w.type) {
       case 'spending_summary':
-        return <SpendingSummaryWidget transactions={transactions} loading={loadingTx} size={w.size} />
+        return <SpendingSummaryWidget
+          transactions={transactions}
+          loading={loadingTx}
+          size={w.size}
+          budgetAmount={user?.preferences?.budget_amount}
+          budgetPeriod={user?.preferences?.budget_period}
+        />
       case 'recent_transactions':
         return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} onUpdate={handleUpdate} onDelete={handleDelete} />
       case 'add_transaction':
