@@ -13,7 +13,7 @@ import (
 func Register(r *gin.Engine, cfg *config.Config) {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.FrontendURL},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type"},
 		AllowCredentials: true,
 	}))
@@ -23,6 +23,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 
 	authHandler := handlers.NewAuthHandler(sb, db.DB, isProd)
 	transactionHandler := handlers.NewTransactionHandler(db.DB)
+	widgetHandler := handlers.NewWidgetHandler(db.DB)
 
 	// Auth routes — no JWT middleware
 	auth := r.Group("/api/auth")
@@ -36,6 +37,9 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	api := r.Group("/api", middleware.Auth(cfg.SupabaseURL))
 	{
 		api.GET("/me", authHandler.Me)
+
+		api.GET("/dashboard/widgets", widgetHandler.List)
+		api.PUT("/dashboard/widgets", widgetHandler.Save)
 
 		api.GET("/transactions/quick-add", transactionHandler.QuickAdd)
 		api.GET("/transactions", transactionHandler.List)

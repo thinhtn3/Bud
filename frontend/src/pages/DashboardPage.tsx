@@ -15,7 +15,7 @@ import { WIDGET_REGISTRY, type WidgetType, type WidgetSize, type WidgetInstance 
 
 const STORAGE_KEY = 'bud-dashboard-widgets'
 
-function loadWidgets(): WidgetInstance[] {
+function loadLocalWidgets(): WidgetInstance[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (!saved) return []
@@ -30,8 +30,30 @@ function loadWidgets(): WidgetInstance[] {
   }
 }
 
-function saveWidgets(widgets: WidgetInstance[]) {
+function saveLocalWidgets(widgets: WidgetInstance[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets))
+}
+
+// Convert WidgetInstance[] → backend PUT payload
+function toPayload(widgets: WidgetInstance[]) {
+  return widgets.map((w, i) => ({ type: w.type, size: w.size, position: i }))
+}
+
+// Convert backend response → WidgetInstance[]
+function fromBackend(data: { id: string; type: string; size: string; position: number }[]): WidgetInstance[] {
+  return data
+    .sort((a, b) => a.position - b.position)
+    .map(w => ({ id: w.id, type: w.type as WidgetType, size: w.size as WidgetSize }))
+}
+
+// Debounced sync — collapses rapid calls (e.g. StrictMode double-fire) into one PUT
+let _syncTimer: ReturnType<typeof setTimeout> | null = null
+function syncToBackend(widgets: WidgetInstance[]) {
+  if (_syncTimer) clearTimeout(_syncTimer)
+  _syncTimer = setTimeout(() => {
+    _syncTimer = null
+    api.put('/api/dashboard/widgets', toPayload(widgets)).catch(() => {})
+  }, 300)
 }
 
 export default function DashboardPage() {
@@ -39,16 +61,40 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loadingTx, setLoadingTx] = useState(true)
   const [errorTx, setErrorTx] = useState<string | null>(null)
-  const [widgets, setWidgets] = useState<WidgetInstance[]>(loadWidgets)
+  const [widgets, setWidgets] = useState<WidgetInstance[]>([])
+  const [widgetsReady, setWidgetsReady] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
 
+  // Load widgets: backend first, localStorage fallback + migration
   useEffect(() => {
     refreshUser()
     api.get<Transaction[]>('/api/transactions')
       .then(setTransactions)
       .catch(() => setErrorTx('Failed to load transactions'))
       .finally(() => setLoadingTx(false))
+
+    api.get<{ id: string; type: string; size: string; position: number }[]>('/api/dashboard/widgets')
+      .then(data => {
+        if (data.length > 0) {
+          // Backend has widgets — use them
+          const w = fromBackend(data)
+          setWidgets(w)
+          saveLocalWidgets(w)
+        } else {
+          // Backend empty — check localStorage for one-time migration
+          const local = loadLocalWidgets()
+          if (local.length > 0) {
+            setWidgets(local)
+            syncToBackend(local)
+          }
+        }
+      })
+      .catch(() => {
+        // Backend unreachable — fall back to localStorage
+        setWidgets(loadLocalWidgets())
+      })
+      .finally(() => setWidgetsReady(true))
   }, [])
 
   function handleAdd(tx: Transaction) {
@@ -63,7 +109,8 @@ export default function DashboardPage() {
 
   const handleReorder = useCallback((newOrder: WidgetInstance[]) => {
     setWidgets(newOrder)
-    saveWidgets(newOrder)
+    saveLocalWidgets(newOrder)
+    syncToBackend(newOrder)
   }, [])
 
   const { dragState, displayWidgets, cellRefs, floatingRef, onPointerDown } = useDragReorder({
@@ -80,7 +127,8 @@ export default function DashboardPage() {
     }
     setWidgets(prev => {
       const next = [...prev, instance]
-      saveWidgets(next)
+      saveLocalWidgets(next)
+      syncToBackend(next)
       return next
     })
   }, [])
@@ -88,7 +136,8 @@ export default function DashboardPage() {
   const removeWidget = useCallback((id: string) => {
     setWidgets(prev => {
       const next = prev.filter(w => w.id !== id)
-      saveWidgets(next)
+      saveLocalWidgets(next)
+      syncToBackend(next)
       if (next.length === 0) setEditMode(false)
       return next
     })
@@ -142,7 +191,11 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {widgets.length === 0 ? (
+        {!widgetsReady ? (
+          <div style={{ padding: '80px 0', textAlign: 'center' }}>
+            <p className="bud-tx-loading">Loading dashboard…</p>
+          </div>
+        ) : widgets.length === 0 ? (
           <div className="bud-empty-state">
             <p className="bud-empty-title">Your dashboard is empty</p>
             <p className="bud-empty-sub">

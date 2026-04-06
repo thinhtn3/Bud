@@ -47,6 +47,8 @@ export function WidgetPicker({ open, activeWidgets, onAdd, onClose }: Props) {
   }
 
   function handleSizeClick(type: WidgetType, size: WidgetSize) {
+    if (activeTypes.has(type)) return
+    setExpanded(null)
     onAdd(type, size)
     onClose()
   }
