@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
+import { Dropdown } from '@/components/ui/Dropdown'
 
 interface Props {
   onAdd: (tx: Transaction) => void
@@ -49,13 +50,15 @@ export function AddTransactionWidget({ onAdd }: Props) {
     <div className="bud-widget">
       <p className="bud-widget-label">Add Transaction</p>
 
-      <div className="bud-toggle">
+      <div className="bud-toggle" data-active={type}>
+        <div className="bud-toggle-thumb" />
         {(['expense', 'income'] as const).map(t => (
           <button
             key={t}
             type="button"
+            data-value={t}
             onClick={() => setType(t)}
-            className={`bud-toggle-btn ${type === t ? `active-${t}` : ''}`}
+            className="bud-toggle-btn"
           >
             {t}
           </button>
@@ -91,16 +94,18 @@ export function AddTransactionWidget({ onAdd }: Props) {
           />
         </div>
 
-        <select
-          value={categoryId}
-          onChange={e => setCategoryId(e.target.value)}
-          className="bud-select"
-        >
-          <option value="">No category</option>
-          {user?.categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
-          ))}
-        </select>
+        <Dropdown
+          value={categoryId || undefined}
+          onChange={setCategoryId}
+          placeholder="No category"
+          options={[
+            { value: '', label: 'No category' },
+            ...(user?.categories ?? []).map(cat => ({
+              value: cat.id,
+              label: cat.name,
+            })),
+          ]}
+        />
 
         <input
           placeholder="Description (optional)"

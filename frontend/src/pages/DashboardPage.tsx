@@ -8,6 +8,7 @@ import { WidgetPicker } from '@/components/widgets/WidgetPicker'
 import { SpendingSummaryWidget } from '@/components/widgets/SpendingSummaryWidget'
 import { AddTransactionWidget } from '@/components/widgets/AddTransactionWidget'
 import { RecentTransactionsWidget } from '@/components/widgets/RecentTransactionsWidget'
+import { QuickAddWidget } from '@/components/widgets/QuickAddWidget'
 import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance } from '@/components/widgets/widgetRegistry'
 
 const STORAGE_KEY = 'bud-dashboard-widgets'
@@ -44,6 +45,14 @@ export default function DashboardPage() {
     setTransactions(prev => [tx, ...prev])
   }
 
+  function handleUpdate(updated: Transaction) {
+    setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t))
+  }
+
+  function handleDelete(id: string) {
+    setTransactions(prev => prev.filter(t => t.id !== id))
+  }
+
   const addWidget = useCallback((type: WidgetType) => {
     const def = WIDGET_REGISTRY.find(d => d.type === type)
     if (!def) return
@@ -72,9 +81,11 @@ export default function DashboardPage() {
       case 'spending_summary':
         return <SpendingSummaryWidget transactions={transactions} loading={loadingTx} />
       case 'recent_transactions':
-        return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} />
+        return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} onUpdate={handleUpdate} onDelete={handleDelete} />
       case 'add_transaction':
         return <AddTransactionWidget onAdd={handleAdd} />
+      case 'quick_add':
+        return <QuickAddWidget onAdd={handleAdd} />
       default:
         return null
     }
@@ -84,6 +95,9 @@ export default function DashboardPage() {
     <>
       <style>{budStyles}</style>
       <div className="bud-root">
+        <div className="bud-bg-blob bud-bg-blob-1" />
+        <div className="bud-bg-blob bud-bg-blob-2" />
+        <div className="bud-bg-blob bud-bg-blob-3" />
         <header className="bud-header">
           <div>
             <p className="bud-greeting">Good {getTimeOfDay()}</p>

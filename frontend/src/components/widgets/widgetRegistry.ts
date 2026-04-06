@@ -1,4 +1,4 @@
-export type WidgetType = 'spending_summary' | 'recent_transactions' | 'add_transaction'
+export type WidgetType = 'spending_summary' | 'recent_transactions' | 'add_transaction' | 'quick_add'
 
 export interface WidgetDefinition {
   type: WidgetType
@@ -24,6 +24,12 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     type: 'add_transaction',
     label: 'Add Transaction',
     description: 'Quick-entry form to log a new expense or income',
+    defaultCols: 5,
+  },
+  {
+    type: 'quick_add',
+    label: 'Quick Add',
+    description: 'One-tap shortcuts from your recurring and recent transactions',
     defaultCols: 5,
   },
 ]
