@@ -94,10 +94,67 @@ export const budStyles = `
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     padding-bottom: 24px;
     border-bottom: 1px solid rgba(255,255,255,0.05);
     max-width: 1280px;
+  }
+
+  /* ── Month navigator ──────────────────────────────────── */
+  .bud-month-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 28px;
+    max-width: 1280px;
+  }
+  .bud-month-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    color: #8a8f98;
+    cursor: pointer;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+    flex-shrink: 0;
+  }
+  .bud-month-arrow:hover:not(:disabled) {
+    color: #d0d6e0;
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.14);
+  }
+  .bud-month-arrow:disabled {
+    opacity: 0.28;
+    cursor: default;
+  }
+  .bud-month-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #d0d6e0;
+    letter-spacing: -0.2px;
+    min-width: 108px;
+    text-align: center;
+  }
+  .bud-month-today {
+    margin-left: 6px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 510;
+    color: #ffd11a;
+    background: rgba(255,209,26,0.08);
+    border: 1px solid rgba(255,209,26,0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.13s, border-color 0.13s;
+    font-family: 'Inter', sans-serif;
+  }
+  .bud-month-today:hover {
+    background: rgba(255,209,26,0.14);
+    border-color: rgba(255,209,26,0.32);
   }
   .bud-greeting {
     font-size: 13px;
@@ -277,7 +334,7 @@ export const budStyles = `
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 12px;
     padding: 24px;
-    overflow: hidden;
+    overflow: clip;
     transition: background 0.15s, border-color 0.15s;
     height: 100%;
   }
@@ -492,7 +549,6 @@ export const budStyles = `
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    flex: 1;
   }
   .bud-qa-chip-amt {
     font-size: 13px;
@@ -504,6 +560,42 @@ export const budStyles = `
   }
   .bud-qa-chip-amt-expense { color: #d03238; }
   .bud-qa-chip-amt-income  { color: #9fe870; }
+
+  .bud-qa-chip-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.05);
+    color: #62666d;
+  }
+  .bud-qa-chip-expense .bud-qa-chip-icon {
+    background: rgba(208,50,56,0.08);
+    color: #b8282d;
+  }
+  .bud-qa-chip-income .bud-qa-chip-icon {
+    background: rgba(159,232,112,0.08);
+    color: #7ecb50;
+  }
+  .bud-qa-chip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+  .bud-qa-chip-category {
+    font-size: 11px;
+    color: #62666d;
+    letter-spacing: -0.1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 440;
+  }
 
   /* ── Category Breakdown small variant ────────────────── */
   .bud-cat-rows {
@@ -578,6 +670,12 @@ export const budStyles = `
   }
   .bud-qa-chips--inline .bud-qa-chip-amt {
     font-size: 11px;
+  }
+  .bud-qa-chips--inline .bud-qa-chip-category { display: none; }
+  .bud-qa-chips--inline .bud-qa-chip-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
   }
 
   .bud-qa-form {
@@ -816,8 +914,11 @@ export const budStyles = `
     flex-direction: column;
     gap: 0;
     list-style: none;
+    min-height: 0;
     max-height: 380px;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.08) transparent;
   }

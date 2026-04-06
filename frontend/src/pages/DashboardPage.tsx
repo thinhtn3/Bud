@@ -12,6 +12,7 @@ import { QuickAddWidget } from '@/components/widgets/QuickAddWidget'
 import { CategoryBreakdownWidget } from '@/components/widgets/CategoryBreakdownWidget'
 import { useDragReorder } from '@/components/widgets/useDragReorder'
 import { WIDGET_REGISTRY, type WidgetType, type WidgetSize, type WidgetInstance } from '@/components/widgets/widgetRegistry'
+import { parseLocalDate, formatMonthYear } from '@/lib/dateUtils'
 
 const STORAGE_KEY = 'bud-dashboard-widgets'
 
@@ -66,13 +67,28 @@ export default function DashboardPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
 
-  // Load widgets: backend first, localStorage fallback + migration
+  const now = new Date()
+  const [viewYear, setViewYear] = useState(now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(now.getMonth())
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth()
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
+    else setViewMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (isCurrentMonth) return
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
+    else setViewMonth(m => m + 1)
+  }
+  function goToCurrentMonth() {
+    setViewYear(now.getFullYear())
+    setViewMonth(now.getMonth())
+  }
+
+  // Load widgets + user: runs once on mount
   useEffect(() => {
     refreshUser()
-    api.get<Transaction[]>('/api/transactions')
-      .then(setTransactions)
-      .catch(() => setErrorTx('Failed to load transactions'))
-      .finally(() => setLoadingTx(false))
 
     api.get<{ id: string; type: string; size: string; position: number }[]>('/api/dashboard/widgets')
       .then(data => {
@@ -97,11 +113,39 @@ export default function DashboardPage() {
       .finally(() => setWidgetsReady(true))
   }, [])
 
+  // Fetch transactions for the viewed month; re-runs on month navigation
+  useEffect(() => {
+    let cancelled = false
+    setLoadingTx(true)
+    setErrorTx(null)
+    setTransactions([])
+    const { from, to } = monthRange(viewYear, viewMonth)
+    api.get<Transaction[]>(`/api/transactions?from=${from}&to=${to}`)
+      .then(data  => { if (!cancelled) setTransactions(data) })
+      .catch(()   => { if (!cancelled) setErrorTx('Failed to load transactions') })
+      .finally(() => { if (!cancelled) setLoadingTx(false) })
+    return () => { cancelled = true }
+  }, [viewYear, viewMonth])
+
   function handleAdd(tx: Transaction) {
-    setTransactions(prev => [tx, ...prev])
+    // Only prepend if the transaction falls within the currently viewed month
+    const d = parseLocalDate(tx.date)
+    const start = new Date(viewYear, viewMonth, 1)
+    const end   = new Date(viewYear, viewMonth + 1, 1)
+    if (d >= start && d < end) {
+      setTransactions(prev => [tx, ...prev])
+    }
   }
   function handleUpdate(updated: Transaction) {
-    setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t))
+    const d = parseLocalDate(updated.date)
+    const start = new Date(viewYear, viewMonth, 1)
+    const end   = new Date(viewYear, viewMonth + 1, 1)
+    const inMonth = d >= start && d < end
+    setTransactions(prev =>
+      inMonth
+        ? prev.map(t => t.id === updated.id ? updated : t)   // update in-place
+        : prev.filter(t => t.id !== updated.id)               // date moved to another month — remove
+    )
   }
   function handleDelete(id: string) {
     setTransactions(prev => prev.filter(t => t.id !== id))
@@ -148,10 +192,12 @@ export default function DashboardPage() {
       case 'spending_summary':
         return <SpendingSummaryWidget
           transactions={transactions}
+          allTransactions={transactions}
           loading={loadingTx}
           size={w.size}
           budgetAmount={user?.preferences?.budget_amount}
           budgetPeriod={user?.preferences?.budget_period}
+          isCurrentMonth={isCurrentMonth}
         />
       case 'recent_transactions':
         return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} onUpdate={handleUpdate} onDelete={handleDelete} />
@@ -196,6 +242,30 @@ export default function DashboardPage() {
             <button className="bud-signout" onClick={logout}>Sign out</button>
           </div>
         </header>
+
+        <div className="bud-month-nav">
+          <button className="bud-month-arrow" onClick={prevMonth} aria-label="Previous month">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <span className="bud-month-label">{formatMonthYear(viewYear, viewMonth)}</span>
+          <button
+            className="bud-month-arrow"
+            onClick={nextMonth}
+            disabled={isCurrentMonth}
+            aria-label="Next month"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          {!isCurrentMonth && (
+            <button className="bud-month-today" onClick={goToCurrentMonth}>
+              Today
+            </button>
+          )}
+        </div>
 
         {!widgetsReady ? (
           <div style={{ padding: '80px 0', textAlign: 'center' }}>
@@ -297,4 +367,12 @@ function getTimeOfDay() {
   if (h < 12) return 'morning'
   if (h < 17) return 'afternoon'
   return 'evening'
+}
+
+function monthRange(year: number, month: number): { from: string; to: string } {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const from = `${year}-${pad(month + 1)}-01`
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const to = `${year}-${pad(month + 1)}-${pad(lastDay)}`
+  return { from, to }
 }

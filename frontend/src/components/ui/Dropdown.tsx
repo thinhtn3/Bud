@@ -1,5 +1,5 @@
 import {
-  useState, useRef, useEffect, useCallback,
+  useState, useRef, useEffect, useCallback, useMemo,
   type ReactNode, type KeyboardEvent,
 } from 'react'
 import { createPortal } from 'react-dom'
@@ -40,6 +40,25 @@ export interface DropdownProps {
    */
   trigger?: (props: { open: boolean; selectedLabel: string | undefined }) => ReactNode
   className?: string
+  /** Enable fuzzy search input inside the menu. */
+  searchable?: boolean
+  /** Limit visible items before scrolling. */
+  maxVisibleItems?: number
+}
+
+// ── Fuzzy match ───────────────────────────────────────────────────────────────
+
+function fuzzyMatch(query: string, label: string): boolean {
+  const q = query.toLowerCase().trim()
+  const l = label.toLowerCase()
+  if (l.includes(q)) return true   // substring match first
+  // fallback: all query chars appear in order
+  let qi = 0
+  for (const ch of l) {
+    if (ch === q[qi]) qi++
+    if (qi === q.length) return true
+  }
+  return false
 }
 
 // ── Hook: close on outside click / scroll ────────────────────────────────────
@@ -73,24 +92,45 @@ export function Dropdown({
   disabled = false,
   trigger,
   className = '',
+  searchable = false,
+  maxVisibleItems,
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, right: 0, width: 0 })
+  const [query, setQuery] = useState('')
 
   const triggerRef = useRef<HTMLButtonElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const menuRef    = useRef<HTMLDivElement>(null)
+  const searchRef  = useRef<HTMLInputElement>(null)
 
   // Selectable options only (excludes dividers and labels)
-  const selectableOptions = options.filter(
+  const selectableOptions = useMemo(() => options.filter(
     (o): o is Extract<DropdownOption, { type?: 'option' }> =>
       o.type === undefined || o.type === 'option',
-  )
+  ), [options])
 
   const selectedLabel = value
     ? selectableOptions.find(o => o.value === value)?.label
     : undefined
+
+  // Filtered options for display when searchable
+  const displayOptions = useMemo(() => {
+    if (!searchable || !query.trim()) return options
+    return options.filter(opt => {
+      if (opt.type === 'divider' || opt.type === 'label') return false
+      return fuzzyMatch(query, opt.label)
+    })
+  }, [options, query, searchable])
+
+  const filteredSelectableOptions = useMemo(() => displayOptions.filter(
+    (o): o is Extract<DropdownOption, { type?: 'option' }> =>
+      o.type === undefined || o.type === 'option',
+  ), [displayOptions])
+
+  // Reset highlight when query changes
+  useEffect(() => { setHighlightedIndex(-1) }, [query])
 
   // Position menu relative to trigger
   const updatePosition = useCallback(() => {
@@ -110,26 +150,45 @@ export function Dropdown({
     updatePosition()
     setOpen(true)
     setHighlightedIndex(-1)
+    setQuery('')
   }, [disabled, updatePosition])
 
   const closeMenu = useCallback(() => {
     setOpen(false)
     setHighlightedIndex(-1)
+    setQuery('')
   }, [])
 
   useClickOutside([wrapperRef, menuRef], closeMenu, open)
 
-  // Keep menu aligned with the trigger on scroll/resize; close only via outside click / Escape
+  // Close on scroll outside the menu; reposition on resize
   useEffect(() => {
     if (!open) return
-    const syncPosition = () => updatePosition()
-    window.addEventListener('scroll', syncPosition, { capture: true, passive: true })
-    window.addEventListener('resize', syncPosition, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', syncPosition, { capture: true })
-      window.removeEventListener('resize', syncPosition)
+    function onScroll(e: Event) {
+      const menu = menuRef.current
+      if (!menu) return
+      // `e.target` is not always the scrolling node across browsers; composedPath is reliable.
+      if (e.composedPath().includes(menu)) return
+      closeMenu()
     }
-  }, [open, updatePosition])
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true })
+    window.addEventListener('resize', updatePosition, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll, { capture: true })
+      window.removeEventListener('resize', updatePosition)
+    }
+  }, [open, closeMenu, updatePosition])
+
+  // Focus search input or menu when opened
+  useEffect(() => {
+    if (!open) return
+    if (searchable) {
+      // Slight delay so the portal is painted before focus
+      requestAnimationFrame(() => searchRef.current?.focus())
+    } else {
+      menuRef.current?.focus()
+    }
+  }, [open, searchable])
 
   // Keyboard navigation on trigger
   function onTriggerKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
@@ -140,7 +199,28 @@ export function Dropdown({
     if (e.key === 'Escape') closeMenu()
   }
 
-  // Keyboard navigation on menu
+  // Keyboard navigation on search input
+  function onSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Escape') { closeMenu(); triggerRef.current?.focus(); return }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightedIndex(i => Math.min(i + 1, filteredSelectableOptions.length - 1))
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightedIndex(i => Math.max(i - 1, 0))
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const opt = highlightedIndex >= 0
+        ? filteredSelectableOptions[highlightedIndex]
+        : filteredSelectableOptions[0]  // auto-select top result on Enter
+      if (opt) { onChange?.(opt.value); closeMenu(); triggerRef.current?.focus() }
+    }
+    if (e.key === 'Tab') closeMenu()
+  }
+
+  // Keyboard navigation on menu (non-searchable)
   function onMenuKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'Escape') {
       closeMenu()
@@ -153,24 +233,16 @@ export function Dropdown({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setHighlightedIndex(i =>
-        i < enabledOptions.length - 1 ? i + 1 : 0
-      )
+      setHighlightedIndex(i => i < enabledOptions.length - 1 ? i + 1 : 0)
     }
     if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setHighlightedIndex(i =>
-        i > 0 ? i - 1 : enabledOptions.length - 1
-      )
+      setHighlightedIndex(i => i > 0 ? i - 1 : enabledOptions.length - 1)
     }
     if (e.key === 'Enter' && currentIdx >= 0) {
       e.preventDefault()
       const opt = enabledOptions[currentIdx]
-      if (opt) {
-        onChange?.(opt.value)
-        closeMenu()
-        triggerRef.current?.focus()
-      }
+      if (opt) { onChange?.(opt.value); closeMenu(); triggerRef.current?.focus() }
     }
     if (e.key === 'Tab') closeMenu()
   }
@@ -180,10 +252,10 @@ export function Dropdown({
     closeMenu()
   }
 
-  // Focus menu when opened
+  // Focus menu when opened (non-searchable)
   useEffect(() => {
-    if (open) menuRef.current?.focus()
-  }, [open])
+    if (open && !searchable) menuRef.current?.focus()
+  }, [open, searchable])
 
   const resolvedMenuWidth =
     menuWidth != null
@@ -198,9 +270,17 @@ export function Dropdown({
       : { left:  menuPos.left }),
   }
 
-  // Render options list
-  function renderOptions() {
-    return options.map((opt, idx) => {
+  // Each item is ~32px tall; add 8px for padding
+  const listStyle: React.CSSProperties = maxVisibleItems
+    ? { maxHeight: `${maxVisibleItems * 32 + 8}px`, overflowY: 'auto' }
+    : {}
+
+  // Render options list (against displayOptions when searchable, full options otherwise)
+  function renderOptions(opts: DropdownOption[]) {
+    if (searchable && query.trim() && opts.length === 0) {
+      return <div className="bud-dd-no-results">No results</div>
+    }
+    return opts.map((opt, idx) => {
       if (opt.type === 'divider') {
         return <div key={`divider-${idx}`} className="bud-dd-divider" />
       }
@@ -212,8 +292,7 @@ export function Dropdown({
         )
       }
 
-      // Find position among selectable options for highlight tracking
-      const selectableIdx = selectableOptions.findIndex(
+      const selectableIdx = filteredSelectableOptions.findIndex(
         s => s === opt || s.value === opt.value
       )
       const isHighlighted = highlightedIndex === selectableIdx
@@ -251,7 +330,6 @@ export function Dropdown({
   return (
     <div ref={wrapperRef} className={`bud-dd-wrapper ${className}`} style={{ position: 'relative', display: 'block' }}>
       {trigger ? (
-        // Custom trigger — wrap in a div that handles the click
         <div
           onClick={() => open ? closeMenu() : openMenu()}
           style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
@@ -293,10 +371,27 @@ export function Dropdown({
           className="bud-dd-menu"
           data-align={align}
           style={menuStyle}
-          onKeyDown={onMenuKeyDown}
+          onKeyDown={!searchable ? onMenuKeyDown : undefined}
+          onWheel={e => e.stopPropagation()}
           aria-label="Options"
         >
-          {renderOptions()}
+          {searchable && (
+            <div className="bud-dd-search-wrap">
+              <input
+                ref={searchRef}
+                type="text"
+                className="bud-dd-search"
+                placeholder="Search…"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={onSearchKeyDown}
+                autoComplete="off"
+              />
+            </div>
+          )}
+          <div className="bud-dd-options-list" style={listStyle}>
+            {renderOptions(displayOptions)}
+          </div>
         </div>,
         document.body,
       )}

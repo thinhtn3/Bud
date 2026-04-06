@@ -6,6 +6,7 @@ import {
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
+// transactions prop is already filtered to current month by DashboardPage
 
 interface Category {
   id: string
@@ -24,12 +25,7 @@ function buildChartData(
   transactions: Transaction[],
   categories: { id: string; name: string }[],
 ) {
-  const now = new Date()
-  const thisMonth = transactions.filter(t => {
-    if (t.type !== 'expense') return false
-    const d = new Date(t.date)
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-  })
+  const thisMonth = transactions.filter(t => t.type === 'expense')
 
   // Resolve category_id → display name first, then group by name.
   // This merges any IDs that no longer exist in the categories table

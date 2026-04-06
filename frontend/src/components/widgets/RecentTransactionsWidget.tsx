@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { parseLocalDate } from '@/lib/dateUtils'
 import { useAuth } from '@/context/AuthContext'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import type { Transaction } from '@/types'
@@ -41,7 +42,10 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
       )}
 
       {!loading && !error && transactions.length > 0 && (
-        <ul className="bud-tx-list">
+        <ul
+          className="bud-tx-list"
+          onWheel={e => e.stopPropagation()}
+        >
           {transactions.map(tx => (
             <li
               key={tx.id}
@@ -98,7 +102,7 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return parseLocalDate(dateStr).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

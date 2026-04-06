@@ -132,6 +132,8 @@ export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClos
             value={categoryId || undefined}
             onChange={setCategoryId}
             placeholder="No category"
+            searchable
+            maxVisibleItems={4}
             options={[
               { value: '', label: 'No category', icon: <Tag size={13} /> },
               ...(user?.categories ?? []).map(cat => {
