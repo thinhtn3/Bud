@@ -119,13 +119,17 @@ export function Dropdown({
 
   useClickOutside([wrapperRef, menuRef], closeMenu, open)
 
-  // Close on scroll (reposition would be complex; just close)
+  // Keep menu aligned with the trigger on scroll/resize; close only via outside click / Escape
   useEffect(() => {
     if (!open) return
-    const onScroll = () => closeMenu()
-    window.addEventListener('scroll', onScroll, { capture: true, passive: true })
-    return () => window.removeEventListener('scroll', onScroll, { capture: true })
-  }, [open, closeMenu])
+    const syncPosition = () => updatePosition()
+    window.addEventListener('scroll', syncPosition, { capture: true, passive: true })
+    window.addEventListener('resize', syncPosition, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', syncPosition, { capture: true })
+      window.removeEventListener('resize', syncPosition)
+    }
+  }, [open, updatePosition])
 
   // Keyboard navigation on trigger
   function onTriggerKeyDown(e: KeyboardEvent<HTMLButtonElement>) {

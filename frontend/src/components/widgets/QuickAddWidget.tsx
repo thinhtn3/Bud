@@ -10,9 +10,10 @@ interface QuickAddData {
 
 interface Props {
   onAdd: (tx: Transaction) => void
+  size?: 'default' | 'small'
 }
 
-export function QuickAddWidget({ onAdd }: Props) {
+export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
   const { user } = useAuth()
   const [data, setData] = useState<QuickAddData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -68,9 +69,31 @@ export function QuickAddWidget({ onAdd }: Props) {
   }
 
   const isEmpty = !data || (data.recurring.length === 0 && data.recent.length === 0)
+  const isSmall = size === 'small'
+
+  // Small: show up to 4 chips total (recurring first), no section labels, horizontal layout
+  const smallChips = isSmall
+    ? [...(data?.recurring ?? []), ...(data?.recent ?? [])].slice(0, 4)
+    : null
+
+  function renderChip(tx: Transaction) {
+    return (
+      <button
+        key={tx.id}
+        className={`bud-qa-chip bud-qa-chip-${tx.type} ${selected?.id === tx.id ? 'bud-qa-chip-active' : ''}`}
+        onClick={() => selected?.id === tx.id ? dismiss() : prefill(tx)}
+        type="button"
+      >
+        <span className="bud-qa-chip-name">{tx.name}</span>
+        <span className={`bud-qa-chip-amt bud-qa-chip-amt-${tx.type}`}>
+          {tx.type === 'expense' ? '−' : '+'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        </span>
+      </button>
+    )
+  }
 
   return (
-    <div className="bud-widget">
+    <div className={`bud-widget${isSmall ? ' bud-qa-widget--small' : ''}`}>
       <p className="bud-widget-label">Quick Add</p>
 
       {loading ? (
@@ -79,25 +102,70 @@ export function QuickAddWidget({ onAdd }: Props) {
         <p className="bud-tx-empty">
           Add a few transactions to unlock one-tap shortcuts here.
         </p>
+      ) : isSmall ? (
+        <>
+          <div className="bud-qa-chips bud-qa-chips--inline">
+            {smallChips!.map(renderChip)}
+          </div>
+
+          {selected && (
+            <form className="bud-qa-form" onSubmit={handleSubmit}>
+              <div className="bud-qa-form-header">
+                <div className="bud-qa-form-title-row">
+                  <span className="bud-qa-form-name">{selected.name}</span>
+                  <span className={`bud-qa-form-badge bud-qa-form-badge-${selected.type}`}>
+                    {selected.type}
+                  </span>
+                </div>
+                <button type="button" className="bud-qa-dismiss" onClick={dismiss}>✕</button>
+              </div>
+
+              <div className="bud-input-row">
+                <input
+                  required
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  className="bud-input"
+                  placeholder="Amount"
+                />
+                <input
+                  required
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  className="bud-input"
+                />
+              </div>
+
+              <select
+                value={categoryId}
+                onChange={e => setCategoryId(e.target.value)}
+                className="bud-select"
+              >
+                <option value="">No category</option>
+                {user?.categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+
+              {error && <p className="bud-error">{error}</p>}
+
+              <button type="submit" disabled={submitting} className="bud-submit">
+                {submitting ? 'Adding…' : `Add ${selected.type === 'expense' ? 'Expense' : 'Income'}`}
+              </button>
+            </form>
+          )}
+        </>
       ) : (
         <>
           {(data!.recurring.length > 0) && (
             <div className="bud-qa-section">
               <p className="bud-qa-section-label">Recurring</p>
               <div className="bud-qa-chips">
-                {data!.recurring.map(tx => (
-                  <button
-                    key={tx.id}
-                    className={`bud-qa-chip bud-qa-chip-${tx.type} ${selected?.id === tx.id ? 'bud-qa-chip-active' : ''}`}
-                    onClick={() => selected?.id === tx.id ? dismiss() : prefill(tx)}
-                    type="button"
-                  >
-                    <span className="bud-qa-chip-name">{tx.name}</span>
-                    <span className={`bud-qa-chip-amt bud-qa-chip-amt-${tx.type}`}>
-                      {tx.type === 'expense' ? '−' : '+'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                  </button>
-                ))}
+                {data!.recurring.map(renderChip)}
               </div>
             </div>
           )}
@@ -106,19 +174,7 @@ export function QuickAddWidget({ onAdd }: Props) {
             <div className="bud-qa-section">
               <p className="bud-qa-section-label">Recent</p>
               <div className="bud-qa-chips">
-                {data!.recent.map(tx => (
-                  <button
-                    key={tx.id}
-                    className={`bud-qa-chip bud-qa-chip-${tx.type} ${selected?.id === tx.id ? 'bud-qa-chip-active' : ''}`}
-                    onClick={() => selected?.id === tx.id ? dismiss() : prefill(tx)}
-                    type="button"
-                  >
-                    <span className="bud-qa-chip-name">{tx.name}</span>
-                    <span className={`bud-qa-chip-amt bud-qa-chip-amt-${tx.type}`}>
-                      {tx.type === 'expense' ? '−' : '+'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                  </button>
-                ))}
+                {data!.recent.map(renderChip)}
               </div>
             </div>
           )}

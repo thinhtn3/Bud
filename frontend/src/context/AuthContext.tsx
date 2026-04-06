@@ -23,6 +23,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, displayName: string) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -97,6 +98,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Supabase sends a confirmation email — user must verify before logging in
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/me`, { credentials: 'include' })
+      if (!res.ok) return
+      const data = await res.json() as User
+      setUser(data)
+    } catch {
+      // silently ignore — stale data is better than crashing
+    }
+  }, [])
+
   const logout = useCallback(async () => {
     await fetch(`${API_URL}/api/auth/session`, {
       method: 'DELETE',
@@ -107,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

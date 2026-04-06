@@ -45,9 +45,10 @@ function periodLabel(period: Period): string {
 interface Props {
   transactions: Transaction[]
   loading: boolean
+  size?: 'small' | 'medium' | 'large'
 }
 
-export function SpendingSummaryWidget({ transactions, loading }: Props) {
+export function SpendingSummaryWidget({ transactions, loading, size = 'large' }: Props) {
   const [period, setPeriod] = useState<Period>('week')
 
   const totalIncome   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
@@ -65,9 +66,15 @@ export function SpendingSummaryWidget({ transactions, loading }: Props) {
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
+  const rowClass = size === 'small'
+    ? 'bud-stat-row bud-stat-row--vertical'
+    : size === 'medium'
+      ? 'bud-stat-row bud-stat-row--grid'
+      : 'bud-stat-row'
+
   if (loading) {
     return (
-      <div className="bud-stat-row">
+      <div className={rowClass}>
         {[0, 1, 2, 3].map(i => (
           <div key={i} className="bud-stat-card bud-stat-skeleton" />
         ))}
@@ -76,7 +83,7 @@ export function SpendingSummaryWidget({ transactions, loading }: Props) {
   }
 
   return (
-    <div className="bud-stat-row">
+    <div className={rowClass}>
 
       {/* Net Balance */}
       <div className="bud-stat-card bud-stat-balance">

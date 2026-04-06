@@ -9,14 +9,22 @@ import { SpendingSummaryWidget } from '@/components/widgets/SpendingSummaryWidge
 import { AddTransactionWidget } from '@/components/widgets/AddTransactionWidget'
 import { RecentTransactionsWidget } from '@/components/widgets/RecentTransactionsWidget'
 import { QuickAddWidget } from '@/components/widgets/QuickAddWidget'
-import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance } from '@/components/widgets/widgetRegistry'
+import { CategoryBreakdownWidget } from '@/components/widgets/CategoryBreakdownWidget'
+import { useDragReorder } from '@/components/widgets/useDragReorder'
+import { WIDGET_REGISTRY, type WidgetType, type WidgetSize, type WidgetInstance } from '@/components/widgets/widgetRegistry'
 
 const STORAGE_KEY = 'bud-dashboard-widgets'
 
 function loadWidgets(): WidgetInstance[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
-    return saved ? JSON.parse(saved) : []
+    if (!saved) return []
+    return JSON.parse(saved).map((w: Record<string, unknown>) => {
+      if (w.size) return w as WidgetInstance
+      const cols = (w.cols as number) ?? 6
+      const size: WidgetSize = cols >= 10 ? 'large' : cols >= 4 ? 'medium' : 'small'
+      return { id: w.id as string, type: w.type as WidgetType, size }
+    })
   } catch {
     return []
   }
@@ -27,14 +35,16 @@ function saveWidgets(widgets: WidgetInstance[]) {
 }
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loadingTx, setLoadingTx] = useState(true)
   const [errorTx, setErrorTx] = useState<string | null>(null)
   const [widgets, setWidgets] = useState<WidgetInstance[]>(loadWidgets)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
 
   useEffect(() => {
+    refreshUser()
     api.get<Transaction[]>('/api/transactions')
       .then(setTransactions)
       .catch(() => setErrorTx('Failed to load transactions'))
@@ -44,22 +54,29 @@ export default function DashboardPage() {
   function handleAdd(tx: Transaction) {
     setTransactions(prev => [tx, ...prev])
   }
-
   function handleUpdate(updated: Transaction) {
     setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t))
   }
-
   function handleDelete(id: string) {
     setTransactions(prev => prev.filter(t => t.id !== id))
   }
 
-  const addWidget = useCallback((type: WidgetType) => {
-    const def = WIDGET_REGISTRY.find(d => d.type === type)
-    if (!def) return
+  const handleReorder = useCallback((newOrder: WidgetInstance[]) => {
+    setWidgets(newOrder)
+    saveWidgets(newOrder)
+  }, [])
+
+  const { dragState, displayWidgets, cellRefs, floatingRef, onPointerDown } = useDragReorder({
+    widgets,
+    editMode,
+    onReorder: handleReorder,
+  })
+
+  const addWidget = useCallback((type: WidgetType, size: WidgetSize) => {
     const instance: WidgetInstance = {
       id: `${type}-${Date.now()}`,
       type,
-      cols: def.defaultCols,
+      size,
     }
     setWidgets(prev => {
       const next = [...prev, instance]
@@ -72,6 +89,7 @@ export default function DashboardPage() {
     setWidgets(prev => {
       const next = prev.filter(w => w.id !== id)
       saveWidgets(next)
+      if (next.length === 0) setEditMode(false)
       return next
     })
   }, [])
@@ -79,13 +97,15 @@ export default function DashboardPage() {
   function renderWidget(w: WidgetInstance) {
     switch (w.type) {
       case 'spending_summary':
-        return <SpendingSummaryWidget transactions={transactions} loading={loadingTx} />
+        return <SpendingSummaryWidget transactions={transactions} loading={loadingTx} size={w.size} />
       case 'recent_transactions':
         return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} onUpdate={handleUpdate} onDelete={handleDelete} />
       case 'add_transaction':
-        return <AddTransactionWidget onAdd={handleAdd} />
+        return <AddTransactionWidget onAdd={handleAdd} size={w.size === 'small' ? 'small' : 'medium'} />
       case 'quick_add':
-        return <QuickAddWidget onAdd={handleAdd} />
+        return <QuickAddWidget onAdd={handleAdd} size={w.size === 'small' ? 'small' : 'default'} />
+      case 'category_breakdown':
+        return <CategoryBreakdownWidget transactions={transactions} loading={loadingTx} size={w.size} />
       default:
         return null
     }
@@ -106,9 +126,17 @@ export default function DashboardPage() {
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {widgets.length > 0 && (
-              <button className="bud-add-widget-btn" onClick={() => setPickerOpen(true)}>
-                + Add Widget
-              </button>
+              <>
+                <button className="bud-add-widget-btn" onClick={() => setPickerOpen(true)}>
+                  + Add Widget
+                </button>
+                <button
+                  className={`bud-edit-btn ${editMode ? 'bud-edit-btn-done' : ''}`}
+                  onClick={() => setEditMode(!editMode)}
+                >
+                  {editMode ? 'Done' : 'Edit'}
+                </button>
+              </>
             )}
             <button className="bud-signout" onClick={logout}>Sign out</button>
           </div>
@@ -125,14 +153,40 @@ export default function DashboardPage() {
             </button>
           </div>
         ) : (
-          <WidgetGrid>
-            {widgets.map(w => (
-              <WidgetCell key={w.id} cols={w.cols as 1|2|3|4|5|6|7|8|9|10|11|12}>
-                <div className="bud-widget-wrapper" style={{ position: 'relative', height: '100%' }}>
+          <WidgetGrid className={editMode ? 'bud-edit-mode' : ''}>
+            {displayWidgets.map((w) => (
+              <WidgetCell
+                key={w.id}
+                size={w.size}
+                cellRef={(el) => {
+                  if (el) cellRefs.current.set(w.id, el)
+                  else cellRefs.current.delete(w.id)
+                }}
+                className={dragState?.activeId === w.id ? 'bud-drag-placeholder' : ''}
+              >
+                <div
+                  className="bud-widget-wrapper"
+                  style={{ position: 'relative', height: '100%' }}
+                >
                   {renderWidget(w)}
+                  {/* 6-dot drag handle — only active in edit mode */}
+                  <div
+                    className="bud-drag-handle"
+                    onPointerDown={(e) => onPointerDown(e, w.id)}
+                    aria-label="Drag to reorder"
+                  >
+                    <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor">
+                      <circle cx="3" cy="2" r="1.5"/>
+                      <circle cx="9" cy="2" r="1.5"/>
+                      <circle cx="3" cy="7" r="1.5"/>
+                      <circle cx="9" cy="7" r="1.5"/>
+                      <circle cx="3" cy="12" r="1.5"/>
+                      <circle cx="9" cy="12" r="1.5"/>
+                    </svg>
+                  </div>
                   <button
                     className="bud-widget-remove"
-                    onClick={() => removeWidget(w.id)}
+                    onClick={(e) => { e.stopPropagation(); removeWidget(w.id) }}
                     aria-label="Remove widget"
                   >
                     ✕
@@ -142,6 +196,31 @@ export default function DashboardPage() {
             ))}
           </WidgetGrid>
         )}
+
+        {/* Floating dragged widget — follows pointer */}
+        {dragState && (() => {
+          const w = widgets.find(w => w.id === dragState.activeId)
+          if (!w) return null
+          return (
+            <div
+              ref={floatingRef}
+              className="bud-drag-floating"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: dragState.originalRect.width,
+                height: dragState.originalRect.height,
+                zIndex: 9999,
+                pointerEvents: 'none',
+              }}
+            >
+              <div className="bud-widget-wrapper" style={{ height: '100%' }}>
+                {renderWidget(w)}
+              </div>
+            </div>
+          )
+        })()}
 
         <WidgetPicker
           open={pickerOpen}

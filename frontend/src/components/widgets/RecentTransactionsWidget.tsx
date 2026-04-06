@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import { useAuth } from '@/context/AuthContext'
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import type { Transaction } from '@/types'
 import { EditTransactionModal } from './EditTransactionModal'
+import { getCategoryIcon } from './categoryIcons'
 
 interface Props {
   transactions: Transaction[]
@@ -11,7 +14,15 @@ interface Props {
 }
 
 export function RecentTransactionsWidget({ transactions, loading, error, onUpdate, onDelete }: Props) {
+  const { user } = useAuth()
   const [editing, setEditing] = useState<Transaction | null>(null)
+
+  function getCategoryMeta(categoryId: string | null) {
+    if (!categoryId) return null
+    const cat = user?.categories.find(c => c.id === categoryId)
+    if (!cat) return null
+    return { name: cat.name, Icon: getCategoryIcon(cat.name) }
+  }
 
   return (
     <div className="bud-widget">
@@ -42,10 +53,25 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
               aria-label={`Edit ${tx.name}`}
             >
               <div className="bud-tx-left">
-                <span className={`bud-tx-dot ${tx.type}`} />
+                {/* Category icon — falls back to arrow for uncategorised */}
+                {(() => {
+                  const cat = getCategoryMeta(tx.category_id)
+                  const Icon = cat ? cat.Icon : tx.type === 'income' ? ArrowUp : ArrowDown
+                  return (
+                    <div className={`bud-tx-icon-wrap ${tx.type}`}>
+                      <Icon size={14} />
+                    </div>
+                  )
+                })()}
                 <div className="bud-tx-meta">
                   <span className="bud-tx-name">{tx.name}</span>
-                  <span className="bud-tx-date">{formatDate(tx.date)}</span>
+                  <span className="bud-tx-date">
+                    {formatDate(tx.date)}
+                    {getCategoryMeta(tx.category_id) && ` · ${getCategoryMeta(tx.category_id)!.name}`}
+                  </span>
+                  {tx.description && (
+                    <span className="bud-tx-note">{tx.description}</span>
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

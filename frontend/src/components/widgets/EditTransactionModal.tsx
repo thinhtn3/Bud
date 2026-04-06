@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import { Dropdown } from '@/components/ui/Dropdown'
+import { Tag } from 'lucide-react'
+import { getCategoryIcon } from '@/components/widgets/categoryIcons'
 import type { Transaction } from '@/types'
 
 interface Props {
@@ -131,8 +133,11 @@ export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClos
             onChange={setCategoryId}
             placeholder="No category"
             options={[
-              { value: '', label: 'No category' },
-              ...(user?.categories ?? []).map(cat => ({ value: cat.id, label: cat.name })),
+              { value: '', label: 'No category', icon: <Tag size={13} /> },
+              ...(user?.categories ?? []).map(cat => {
+                const Icon = getCategoryIcon(cat.name)
+                return { value: cat.id, label: cat.name, icon: <Icon size={13} /> }
+              }),
             ]}
           />
 
