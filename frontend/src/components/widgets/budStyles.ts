@@ -929,6 +929,17 @@ export const budStyles = `
     border-radius: 4px;
   }
 
+  .bud-tx-date-heading {
+    font-size: 10px;
+    font-weight: 510;
+    color: #62666d;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 10px 8px 4px;
+    list-style: none;
+  }
+  .bud-tx-date-heading:first-child { padding-top: 2px; }
+
   .bud-tx-empty {
     font-size: 14px;
     color: #62666d;

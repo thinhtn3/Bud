@@ -1,10 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
-import { Dropdown } from '@/components/ui/Dropdown'
-import { Tag } from 'lucide-react'
-import { getCategoryIcon } from '@/components/widgets/categoryIcons'
+import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
 import type { Transaction } from '@/types'
 
 interface Props {
@@ -15,12 +12,11 @@ interface Props {
 }
 
 export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClose }: Props) {
-  const { user } = useAuth()
 
   const [type, setType]               = useState(tx.type)
   const [name, setName]               = useState(tx.name)
   const [amount, setAmount]           = useState(String(tx.amount))
-  const [date, setDate]               = useState(tx.date)
+  const [date, setDate]               = useState(tx.date.includes('T') ? tx.date.split('T')[0] : tx.date)
   const [categoryId, setCategoryId]   = useState(tx.category_id ?? '')
   const [description, setDescription] = useState(tx.description ?? '')
   const [saving, setSaving]           = useState(false)
@@ -128,20 +124,7 @@ export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClos
             />
           </div>
 
-          <Dropdown
-            value={categoryId || undefined}
-            onChange={setCategoryId}
-            placeholder="No category"
-            searchable
-            maxVisibleItems={4}
-            options={[
-              { value: '', label: 'No category', icon: <Tag size={13} /> },
-              ...(user?.categories ?? []).map(cat => {
-                const Icon = getCategoryIcon(cat.name)
-                return { value: cat.id, label: cat.name, icon: <Icon size={13} /> }
-              }),
-            ]}
-          />
+          <CategoryDropdown value={categoryId} onChange={setCategoryId} />
 
           <input
             placeholder="Description (optional)"

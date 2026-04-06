@@ -11,5 +11,5 @@ type Category struct {
 
 // DefaultCategories are seeded once at startup with user_id = NULL.
 var DefaultCategories = []string{
-	"Food", "Transport", "Utilities", "Entertainment", "Health", "Shopping", "Subscription", "Other",
+	"Food", "Groceries", "Transport", "Utilities", "Entertainment", "Health", "Shopping", "Subscription", "Other",
 }

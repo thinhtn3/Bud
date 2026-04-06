@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 
 const API_URL = import.meta.env.VITE_API_URL as string
 
-interface Category {
+export interface Category {
   id: string
   user_id: string
   name: string
@@ -35,6 +35,7 @@ interface AuthContextValue {
   register: (email: string, password: string, displayName: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  addCategory: (name: string) => Promise<Category>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -120,6 +121,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const addCategory = useCallback(async (name: string): Promise<Category> => {
+    const res = await fetch(`${API_URL}/api/categories`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    })
+    if (!res.ok) throw new Error('Failed to create category')
+    const cat = await res.json() as Category
+    setUser(prev => prev ? { ...prev, categories: [...prev.categories, cat] } : prev)
+    return cat
+  }, [])
+
   const logout = useCallback(async () => {
     await fetch(`${API_URL}/api/auth/session`, {
       method: 'DELETE',
@@ -130,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, addCategory }}>
       {children}
     </AuthContext.Provider>
   )

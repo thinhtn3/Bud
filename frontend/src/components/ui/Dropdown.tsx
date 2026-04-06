@@ -44,6 +44,8 @@ export interface DropdownProps {
   searchable?: boolean
   /** Limit visible items before scrolling. */
   maxVisibleItems?: number
+  /** Optional content rendered below the options list (e.g. "add new" action). */
+  footer?: ReactNode
 }
 
 // ── Fuzzy match ───────────────────────────────────────────────────────────────
@@ -94,6 +96,7 @@ export function Dropdown({
   className = '',
   searchable = false,
   maxVisibleItems,
+  footer,
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
@@ -392,6 +395,7 @@ export function Dropdown({
           <div className="bud-dd-options-list" style={listStyle}>
             {renderOptions(displayOptions)}
           </div>
+          {footer && <div className="bud-dd-footer">{footer}</div>}
         </div>,
         document.body,
       )}

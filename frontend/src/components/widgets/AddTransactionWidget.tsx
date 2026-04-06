@@ -1,10 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
-import { Dropdown } from '@/components/ui/Dropdown'
-import { Tag } from 'lucide-react'
-import { getCategoryIcon } from '@/components/widgets/categoryIcons'
+import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
 
 interface Props {
   onAdd: (tx: Transaction) => void
@@ -12,7 +9,6 @@ interface Props {
 }
 
 export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
-  const { user } = useAuth()
 
   const [type, setType] = useState<'expense' | 'income'>('expense')
   const [name, setName] = useState('')
@@ -90,20 +86,7 @@ export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
             onChange={e => setDate(e.target.value)}
             className="bud-input"
           />
-          <Dropdown
-            value={categoryId || undefined}
-            onChange={setCategoryId}
-            placeholder="No category"
-            searchable
-            maxVisibleItems={4}
-            options={[
-              { value: '', label: 'No category', icon: <Tag size={13} /> },
-              ...(user?.categories ?? []).map(cat => {
-                const Icon = getCategoryIcon(cat.name)
-                return { value: cat.id, label: cat.name, icon: <Icon size={13} /> }
-              }),
-            ]}
-          />
+          <CategoryDropdown value={categoryId} onChange={setCategoryId} />
           <input
             placeholder="Description (optional)"
             value={description}
@@ -152,20 +135,7 @@ export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
           />
         </div>
 
-        <Dropdown
-          value={categoryId || undefined}
-          onChange={setCategoryId}
-          placeholder="No category"
-          searchable
-          maxVisibleItems={4}
-          options={[
-            { value: '', label: 'No category', icon: <Tag size={13} /> },
-            ...(user?.categories ?? []).map(cat => {
-              const Icon = getCategoryIcon(cat.name)
-              return { value: cat.id, label: cat.name, icon: <Icon size={13} /> }
-            }),
-          ]}
-        />
+        <CategoryDropdown value={categoryId} onChange={setCategoryId} />
 
         <input
           placeholder="Description (optional)"
