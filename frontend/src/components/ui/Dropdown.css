@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap');
+
+/* ── Bud Dropdown ─────────────────────────────────────────────────────────── */
+/*
+ * Use .bud-dd-wrapper .bud-dd-… so padding wins over `.bud-root * { padding: 0 }` in budStyles
+ * (same specificity as a lone class would tie and lose when the inline style runs later).
+ */
+
+.bud-dd-wrapper .bud-dd-trigger {
+  /* Match .bud-input height & vertical rhythm (native <button> defaults differ from <input>) */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.42857;
+  color: #f7f8f8;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.bud-dd-wrapper .bud-dd-trigger:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.bud-dd-wrapper .bud-dd-trigger:focus-visible {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 2px rgba(113, 112, 255, 0.25);
+}
+.bud-dd-wrapper .bud-dd-trigger[data-open="true"] {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.bud-dd-wrapper .bud-dd-trigger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.bud-dd-wrapper .bud-dd-trigger-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bud-dd-wrapper .bud-dd-trigger-value[data-placeholder="true"] {
+  color: #8a8f98;
+}
+
+.bud-dd-wrapper .bud-dd-chevron {
+  flex-shrink: 0;
+  color: #62666d;
+  transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1), color 0.15s;
+  display: flex;
+  align-items: center;
+}
+.bud-dd-wrapper .bud-dd-trigger[data-open="true"] .bud-dd-chevron {
+  transform: rotate(180deg);
+  color: #8a8f98;
+}
+
+/* ── Menu (rendered in portal) ───────────────────────────────────────────── */
+
+.bud-dd-menu {
+  position: fixed;
+  z-index: 9999;
+  background: #191a1b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  min-width: 160px;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  /* Entry animation */
+  transform-origin: top center;
+  animation: bud-dd-in 0.14s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+.bud-dd-menu[data-align="right"] {
+  transform-origin: top right;
+}
+
+@keyframes bud-dd-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Menu items ──────────────────────────────────────────────────────────── */
+
+.bud-dd-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  font-size: 13px;
+  font-weight: 400;
+  color: #d0d6e0;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+  outline: none;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.bud-dd-item:hover:not(:disabled),
+.bud-dd-item[data-highlighted="true"] {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f7f8f8;
+}
+.bud-dd-item:disabled {
+  color: #62666d;
+  cursor: not-allowed;
+}
+.bud-dd-item[data-selected="true"] {
+  color: #f7f8f8;
+  font-weight: 510;
+}
+.bud-dd-item[data-variant="danger"] {
+  color: #d03238;
+}
+.bud-dd-item[data-variant="danger"]:hover:not(:disabled),
+.bud-dd-item[data-variant="danger"][data-highlighted="true"] {
+  background: rgba(208, 50, 56, 0.1);
+  color: #d03238;
+}
+
+/* Check icon on selected item */
+.bud-dd-check {
+  width: 14px;
+  flex-shrink: 0;
+  color: #9fe870;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding-left: 8px;
+}
+
+/* ── Section label ───────────────────────────────────────────────────────── */
+
+.bud-dd-section-label {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  font-size: 11px;
+  font-weight: 510;
+  color: #62666d;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 10px 4px;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+
+.bud-dd-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 3px 0;
+}

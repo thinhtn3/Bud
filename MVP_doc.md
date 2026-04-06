@@ -13,13 +13,54 @@ A minimalist personal and shared budgeting app. Users can track their own spendi
 - Session managed by Supabase JS SDK on the frontend
 - Go backend validates Supabase-issued JWTs on every protected request
 
-### 2. Personal Finance Tracking
-- Add, edit, delete transactions manually
-- Categorise transactions (Food, Transport, Utilities, Entertainment, Other)
-- View personal transaction history with simple filters (by date, by category)
-- Running balance display on the dashboard
+### 2. Personal Dashboard
 
-### 3. Groups
+Each user account has one personal dashboard. The dashboard is a grid of customisable widget islands — prebuilt stat components the user selects and arranges. Widgets snap to a fixed 12-column grid. The layout is persisted per user.
+
+**Prebuilt widget types:**
+
+| Widget | Description |
+|---|---|
+| `total_balance` | Current net balance (income minus expenses) |
+| `total_income` | Total income this month |
+| `total_expenses` | Total expenses this month |
+| `spending_summary` | This month vs. last month comparison |
+| `category_breakdown` | Spending by category (bar chart) |
+| `recent_transactions` | Last 5 transactions with type and amount |
+| `group_debts` | Net amount owed / owed to you across all groups |
+
+**Widget behaviour:**
+- One dashboard per user account
+- **New dashboards start completely empty** — no widgets are shown by default
+- The empty state displays a friendly prompt and a single "Add Widget" CTA
+- Users open a widget picker (slide-in panel) to select and add widgets
+- Once at least one widget is present, an "Add Widget" button persists in the header
+- Widgets can be individually removed via a hover-reveal ✕ button on each card
+- Widgets sit on a fixed 12-column grid; movement and resizing always snaps to grid cells
+- Each widget has a default column span; users can resize freely within grid boundaries
+- Layout (active widgets, column spans) is persisted per user (localStorage for MVP, backend via `dashboard_widgets` table post-MVP)
+- Widgets with no data show a friendly empty state with a CTA
+
+---
+
+### 3. Personal Finance Tracking
+
+#### Transactions & Income
+- Manually add an **expense** (description, amount, date, category) — date defaults to today
+- Manually add an **income entry** (description, amount, date, category) — same fields as expense
+- Edit or delete any entry
+- Categories: Food, Transport, Utilities, Entertainment, Health, Income, Other
+
+#### Quick Add
+- A dedicated quick-add section surfaces the user's **recurring transactions** and their **5 most recent transactions** as one-tap re-entry shortcuts
+- Tapping a shortcut pre-fills the form with that entry's fields; the user confirms or adjusts before saving
+
+#### Recent Transactions List
+- Chronological list of all personal transactions (expenses + income)
+- Filter by **category** and/or **date range**
+- Each row shows: description, amount (colour-coded — red for expense, green for income), category, date
+
+### 4. Groups
 - Create a group (name, optional description)
 - Invite members by email
 - Accept/decline group invitations
@@ -34,13 +75,13 @@ A minimalist personal and shared budgeting app. Users can track their own spendi
 
 > If visibility is off, members only see their own transactions and the splits they are part of.
 
-### 4. Group Transactions & Bill Splitting
+### 5. Group Transactions & Bill Splitting
 - Add a transaction to a group (who paid, total amount, category, note)
 - Split the transaction: equal split (default), or custom amounts per member
 - The person who paid is recorded as the "payer" — others owe them their share
 - Splits update the debt ledger immediately on submission
 
-### 5. Smart Debt Tracking (Net Settlement)
+### 6. Smart Debt Tracking (Net Settlement)
 
 Each pair of users within a group has a single net debt value. Rather than tracking every individual split, the system **nets debts against each other** so the balance reflects the minimum anyone actually owes.
 
@@ -79,6 +120,12 @@ Result: A owes B $75
 id (uuid, FK → auth.users.id), display_name, created_at
 ```
 
+### dashboard_widgets
+```
+id, user_id (uuid, FK → profiles.id), widget_type (text), pos_x (int), pos_y (int), w (int), h (int), created_at
+```
+> One row per widget on the user's dashboard. `widget_type` is one of the prebuilt types above. `pos_x/pos_y` are grid coordinates; `w/h` are column/row spans.
+
 ### groups
 ```
 id, name, description, creator_id (uuid), visibility_enabled (bool), split_enabled (bool), created_at
@@ -91,9 +138,9 @@ id, group_id, user_id (uuid), role (owner|member), status (invited|active|left),
 
 ### transactions
 ```
-id, user_id (uuid), group_id (nullable — null = personal), amount, category, note, paid_at, created_at
+id, user_id (uuid), group_id (nullable — null = personal), type (expense|income), description (text), amount (decimal), category (text), date (date — defaults to today), is_recurring (bool), created_at
 ```
-> A transaction with a `group_id` is a group transaction. Without one, it's personal.
+> `type` distinguishes expenses from income entries. `is_recurring` flags entries surfaced in the Quick Add section. A transaction with a `group_id` is a group transaction; without one, it's personal.
 
 ### transaction_splits
 ```
@@ -125,11 +172,16 @@ Profile
   GET    /api/me
   PATCH  /api/me
 
-Transactions (personal)
-  GET    /api/transactions
+Dashboard
+  GET    /api/dashboard/widgets          (fetch user's widget layout)
+  PUT    /api/dashboard/widgets          (save full layout — replaces all rows for user)
+
+Transactions (personal — expenses + income)
+  GET    /api/transactions               (?type=expense|income &category=X &from=date &to=date)
   POST   /api/transactions
   PATCH  /api/transactions/:id
   DELETE /api/transactions/:id
+  GET    /api/transactions/quick-add     (recurring + 5 most recent, for Quick Add section)
 
 Groups
   GET    /api/groups
@@ -197,10 +249,16 @@ Debts
 
 ### Key Components
 
-- `TransactionForm` — shared between personal and group transactions
-- `SplitBuilder` — UI for defining how a bill is split (equal or custom)
+- `DashboardGrid` — renders the widget grid, manages snap layout
+- `WidgetPicker` — slide-in panel for selecting which widgets to add
+- `Widget` — wrapper shell (header, resize handle, remove button) used by all widget types
+- `TotalBalanceWidget`, `TotalIncomeWidget`, `TotalExpensesWidget`, `SpendingSummaryWidget`, `CategoryBreakdownWidget`, `RecentTransactionsWidget`, `GroupDebtsWidget` — individual stat islands
+- `TransactionForm` — add/edit form for both expenses and income (type toggle, description, amount, date, category)
+- `QuickAddBar` — surfaces recurring + recent transactions as one-tap re-entry shortcuts
+- `TransactionList` — recent transactions with category and date range filters
+- `SplitBuilder` — UI for defining how a group bill is split (equal or custom)
 - `DebtSummary` — card per pair showing net balance and a "settle up" CTA
-- `GroupFeed` — transaction list, respects visibility setting
+- `GroupFeed` — group transaction list, respects visibility setting
 
 ---
 
@@ -219,9 +277,10 @@ Debts
 1. **Step 1 — Scaffold:** Init React + Vite, Tailwind, shadcn/ui. Init Go module, install Gin + GORM + pgx.
 2. **Step 2 — Supabase setup:** Create project, run migrations, configure RLS, collect env vars.
 3. **Step 3 — Auth:** Supabase Auth on frontend (login/register pages). JWT validation middleware in Go.
-4. **Step 4 — Personal transactions:** CRUD handlers in Go. Transaction list + form in React.
-5. **Step 5 — Groups + invitations:** Group CRUD, invite by email, accept/decline flow.
-6. **Step 6 — Bill splitting + debt tracking:** Split builder UI, debt netting logic in Go, settle up flow.
+4. **Step 4 — Transactions & Income:** CRUD handlers in Go (with `type`, `is_recurring`, filters). TransactionForm, TransactionList, QuickAddBar in React.
+5. **Step 5 — Personal Dashboard:** Widget grid layout, WidgetPicker, dashboard persistence API. Wire stat widgets to real transaction data.
+6. **Step 6 — Groups + invitations:** Group CRUD, invite by email, accept/decline flow.
+7. **Step 7 — Bill splitting + debt tracking:** Split builder UI, debt netting logic in Go, settle up flow.
 
 ---
 
@@ -240,6 +299,7 @@ Debts
 | Push notifications | Mobile alerts for new splits |
 | Export (CSV/PDF) | Transaction history export |
 | OAuth login | Google / Apple Sign In |
+| **Native app** | Full native mobile version of Bud — bank statement uploads (PDF/CSV), Plaid account linking for automatic transaction sync, and a swipe-to-review transaction flow (swipe through each imported transaction to confirm or adjust category/amount before it lands in the ledger) |
 
 ---
 

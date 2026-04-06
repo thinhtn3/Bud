@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -68,31 +69,20 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 	result := h.db.Where(models.Profile{ID: userID}).First(&profile)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		// First login — create the profile
+		// First login — create the profile with preference defaults
 		if displayName == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "display_name missing — please re-register"})
 			return
 		}
-		profile = models.Profile{ID: userID, DisplayName: displayName}
+		profile = models.Profile{ID: userID, DisplayName: displayName, Currency: "USD", FinancialGoals: "[]"}
 		if err := h.db.Create(&profile).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create profile"})
-			return
-		}
-
-		// Seed default categories for the new user
-		categories := make([]models.Category, len(models.DefaultCategories))
-		for i, name := range models.DefaultCategories {
-			categories[i] = models.Category{UserID: userID, Name: name}
-		}
-		if err := h.db.Create(&categories).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not seed categories"})
 			return
 		}
 	} else if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load profile"})
 		return
 	}
-	// Profile already exists — subsequent logins, no action needed
 
 	h.setAccessTokenCookie(c, req.AccessToken)
 	h.setRefreshTokenCookie(c, req.RefreshToken)
@@ -107,11 +97,22 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 	c.JSON(http.StatusOK, userData)
 }
 
+type preferencesResponse struct {
+	OnboardingCompleted bool     `json:"onboarding_completed"`
+	BudgetPeriod        string   `json:"budget_period"`
+	BudgetAmount        float64  `json:"budget_amount"`
+	CarryOverExcess     bool     `json:"carry_over_excess"`
+	MonthlyIncome       *float64 `json:"monthly_income"`
+	Currency            string   `json:"currency"`
+	FinancialGoals      []string `json:"financial_goals"`
+}
+
 type meResponse struct {
-	ID          string            `json:"id"`
-	Email       string            `json:"email"`
-	DisplayName string            `json:"display_name"`
-	Categories  []models.Category `json:"categories"`
+	ID          string              `json:"id"`
+	Email       string              `json:"email"`
+	DisplayName string              `json:"display_name"`
+	Categories  []models.Category   `json:"categories"`
+	Preferences preferencesResponse `json:"preferences"`
 }
 
 // loadUserData fetches the profile and categories for a given user.
@@ -124,15 +125,27 @@ func (h *AuthHandler) loadUserData(userID, email string) (*meResponse, error) {
 	}
 
 	var categories []models.Category
-	if err := h.db.Where("user_id = ?", userID).Order("created_at asc").Find(&categories).Error; err != nil {
+	if err := h.db.Where("user_id = ? OR user_id IS NULL", userID).Order("created_at asc").Find(&categories).Error; err != nil {
 		return nil, err
 	}
+
+	goals := []string{}
+	_ = json.Unmarshal([]byte(profile.FinancialGoals), &goals)
 
 	return &meResponse{
 		ID:          userID,
 		Email:       email,
 		DisplayName: profile.DisplayName,
 		Categories:  categories,
+		Preferences: preferencesResponse{
+			OnboardingCompleted: profile.OnboardingCompleted,
+			BudgetPeriod:        profile.BudgetPeriod,
+			BudgetAmount:        profile.BudgetAmount,
+			CarryOverExcess:     profile.CarryOverExcess,
+			MonthlyIncome:       profile.MonthlyIncome,
+			Currency:            profile.Currency,
+			FinancialGoals:      goals,
+		},
 	}, nil
 }
 

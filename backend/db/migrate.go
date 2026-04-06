@@ -19,4 +19,15 @@ func Migrate() {
 		log.Fatalf("migration failed: %v", err)
 	}
 	log.Println("migration complete")
+
+	seedDefaultCategories()
+}
+
+// seedDefaultCategories inserts system-level categories (user_id = NULL) once.
+// Safe to run on every startup — skips any that already exist.
+func seedDefaultCategories() {
+	for _, name := range models.DefaultCategories {
+		DB.Where(models.Category{Name: name, UserID: nil}).FirstOrCreate(&models.Category{Name: name, UserID: nil})
+	}
+	log.Println("default categories seeded")
 }

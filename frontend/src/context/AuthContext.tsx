@@ -4,9 +4,28 @@ import { supabase } from '@/lib/supabase'
 
 const API_URL = import.meta.env.VITE_API_URL as string
 
+interface Category {
+  id: string
+  user_id: string
+  name: string
+}
+
+interface UserPreferences {
+  onboarding_completed: boolean
+  budget_period: string
+  budget_amount: number
+  carry_over_excess: boolean
+  monthly_income: number | null
+  currency: string
+  financial_goals: string[]
+}
+
 interface User {
   id: string
   email: string
+  display_name: string
+  categories: Category[]
+  preferences: UserPreferences
 }
 
 interface AuthContextValue {
@@ -15,6 +34,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, displayName: string) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -75,7 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (!res.ok) throw new Error('Failed to create session')
 
-    setUser({ id: data.user.id, email: data.user.email ?? '' })
+    const userData = await res.json() as User
+    setUser(userData)
   }, [])
 
   const register = useCallback(async (email: string, password: string, displayName: string) => {
@@ -88,6 +109,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Supabase sends a confirmation email — user must verify before logging in
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/me`, { credentials: 'include' })
+      if (!res.ok) return
+      const data = await res.json() as User
+      setUser(data)
+    } catch {
+      // silently ignore — stale data is better than crashing
+    }
+  }, [])
+
   const logout = useCallback(async () => {
     await fetch(`${API_URL}/api/auth/session`, {
       method: 'DELETE',
@@ -98,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

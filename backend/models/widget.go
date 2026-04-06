@@ -2,26 +2,11 @@ package models
 
 import "time"
 
-// WidgetType identifies which prebuilt stat island a widget renders.
-type WidgetType string
-
-const (
-	WidgetTypeTotalBalance       WidgetType = "total_balance"
-	WidgetTypeTotalIncome        WidgetType = "total_income"
-	WidgetTypeTotalExpenses      WidgetType = "total_expenses"
-	WidgetTypeSpendingSummary    WidgetType = "spending_summary"
-	WidgetTypeCategoryBreakdown  WidgetType = "category_breakdown"
-	WidgetTypeRecentTransactions WidgetType = "recent_transactions"
-	WidgetTypeGroupDebts         WidgetType = "group_debts"
-)
-
 type Widget struct {
-	ID        string     `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID    string     `gorm:"type:uuid;not null;index"`
-	Type      WidgetType `gorm:"type:text;not null"`
-	PosX      int        `gorm:"not null"`
-	PosY      int        `gorm:"not null"`
-	W         int        `gorm:"not null"`
-	H         int        `gorm:"not null"`
-	CreatedAt time.Time  `gorm:"autoCreateTime"`
+	ID        string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID    string    `gorm:"type:uuid;not null;uniqueIndex:idx_user_widget_type" json:"user_id"`
+	Type      string    `gorm:"type:text;not null;uniqueIndex:idx_user_widget_type" json:"type"`
+	Size      string    `gorm:"type:text;not null" json:"size"`
+	Position  int       `gorm:"not null" json:"position"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
