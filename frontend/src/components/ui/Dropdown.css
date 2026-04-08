@@ -91,11 +91,69 @@
     0 2px 8px rgba(0, 0, 0, 0.3);
   min-width: 160px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 
   /* Entry animation */
   transform-origin: top center;
   animation: bud-dd-in 0.14s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* ── Search input ─────────────────────────────────────────────────────────── */
+
+.bud-dd-search-wrap {
+  padding: 4px 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 4px;
+}
+
+.bud-dd-search {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  font-size: 13px;
+  font-weight: 400;
+  color: #f7f8f8;
+  outline: none;
+  box-sizing: border-box;
+  caret-color: #7170ff;
+  transition: border-color 0.13s;
+}
+.bud-dd-search::placeholder { color: #62666d; }
+.bud-dd-search:focus {
+  border-color: rgba(113, 112, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Scrollable options list ──────────────────────────────────────────────── */
+
+.bud-dd-options-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  border-radius: 0 0 6px 6px;
+}
+.bud-dd-options-list::-webkit-scrollbar { width: 4px; }
+.bud-dd-options-list::-webkit-scrollbar-track { background: transparent; }
+.bud-dd-options-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* ── No results ───────────────────────────────────────────────────────────── */
+
+.bud-dd-no-results {
+  padding: 10px 12px;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-size: 13px;
+  color: #62666d;
+  text-align: center;
 }
 .bud-dd-menu[data-align="right"] {
   transform-origin: top right;
@@ -188,4 +246,87 @@
   height: 1px;
   background: rgba(255, 255, 255, 0.06);
   margin: 3px 0;
+}
+
+/* ── Footer (e.g. "add new category" island) ─────────────────────────────── */
+
+.bud-dd-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.bud-dd-footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: #62666d;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s, color 0.1s;
+  box-sizing: border-box;
+}
+.bud-dd-footer-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #8a8f98;
+}
+
+.bud-dd-new-cat-form {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 2px;
+}
+.bud-dd-new-cat-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  font-size: 12px;
+  color: #f7f8f8;
+  outline: none;
+  box-sizing: border-box;
+  caret-color: #7170ff;
+  transition: border-color 0.13s;
+}
+.bud-dd-new-cat-input::placeholder { color: #62666d; }
+.bud-dd-new-cat-input:focus {
+  border-color: rgba(113, 112, 255, 0.4);
+  background: rgba(255, 255, 255, 0.07);
+}
+.bud-dd-new-cat-submit {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: #d0d6e0;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  font-size: 11px;
+  font-weight: 510;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+.bud-dd-new-cat-submit:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+.bud-dd-new-cat-submit:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }

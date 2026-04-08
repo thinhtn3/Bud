@@ -6,6 +6,7 @@ import {
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
+// transactions prop is already filtered to current month by DashboardPage
 
 interface Category {
   id: string
@@ -24,25 +25,21 @@ function buildChartData(
   transactions: Transaction[],
   categories: { id: string; name: string }[],
 ) {
-  const now = new Date()
-  const thisMonth = transactions.filter(t => {
-    if (t.type !== 'expense') return false
-    const d = new Date(t.date)
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-  })
+  const relevant = transactions.filter(t => t.type === 'expense' || t.type === 'reimbursement')
 
   // Resolve category_id → display name first, then group by name.
-  // This merges any IDs that no longer exist in the categories table
-  // into a single "Uncategorized" bucket instead of showing multiple "Unknown" bars.
+  // Expenses add to a category total; reimbursements subtract from it.
   const namedTotals: Record<string, number> = {}
-  for (const t of thisMonth) {
+  for (const t of relevant) {
     const name = t.category_id
       ? (categories.find(c => c.id === t.category_id)?.name ?? 'Uncategorized')
       : 'Uncategorized'
-    namedTotals[name] = (namedTotals[name] ?? 0) + t.amount
+    const delta = t.type === 'reimbursement' ? -t.amount : t.amount
+    namedTotals[name] = (namedTotals[name] ?? 0) + delta
   }
 
   return Object.entries(namedTotals)
+    .filter(([, amount]) => amount > 0)
     .map(([name, amount]) => ({ name, amount }))
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 8)

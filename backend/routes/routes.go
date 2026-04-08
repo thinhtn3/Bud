@@ -12,7 +12,7 @@ import (
 
 func Register(r *gin.Engine, cfg *config.Config) {
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{cfg.FrontendURL},
+		AllowOrigins:     cfg.AllowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type"},
 		AllowCredentials: true,
@@ -25,6 +25,8 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	transactionHandler := handlers.NewTransactionHandler(db.DB)
 	widgetHandler := handlers.NewWidgetHandler(db.DB)
 	preferencesHandler := handlers.NewPreferencesHandler(db.DB)
+	categoryHandler := handlers.NewCategoryHandler(db.DB)
+	cardAliasHandler := handlers.NewCardAliasHandler(db.DB)
 
 	// Auth routes — no JWT middleware
 	auth := r.Group("/api/auth")
@@ -43,8 +45,17 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		api.GET("/dashboard/widgets", widgetHandler.List)
 		api.PUT("/dashboard/widgets", widgetHandler.Save)
 
+		api.POST("/categories", categoryHandler.Create)
+
+		api.GET("/cards", cardAliasHandler.List)
+		api.POST("/cards", cardAliasHandler.Create)
+		api.PUT("/cards/:id", cardAliasHandler.Update)
+		api.DELETE("/cards/:id", cardAliasHandler.Delete)
+
 		api.GET("/transactions/quick-add", transactionHandler.QuickAdd)
 		api.GET("/transactions", transactionHandler.List)
 		api.POST("/transactions", transactionHandler.Create)
+		api.PATCH("/transactions/:id", transactionHandler.Update)
+		api.DELETE("/transactions/:id", transactionHandler.Delete)
 	}
 }

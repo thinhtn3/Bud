@@ -18,11 +18,12 @@ func NewTransactionHandler(db *gorm.DB) *TransactionHandler {
 }
 
 type createTransactionRequest struct {
-	Type        models.TransactionType `json:"type" binding:"required,oneof=expense income"`
+	Type        models.TransactionType `json:"type" binding:"required,oneof=expense income reimbursement"`
 	Name        string                 `json:"name" binding:"required"`
 	Amount      float64                `json:"amount" binding:"required,gt=0"`
 	Date        string                 `json:"date" binding:"required"`
 	CategoryID  *string                `json:"category_id"`
+	CardAliasID *string                `json:"card_alias_id"`
 	Description *string                `json:"description"`
 }
 
@@ -49,6 +50,7 @@ func (h *TransactionHandler) Create(c *gin.Context) {
 		Amount:      req.Amount,
 		Date:        date,
 		CategoryID:  req.CategoryID,
+		CardAliasID: req.CardAliasID,
 		Description: req.Description,
 	}
 
@@ -109,6 +111,63 @@ func (h *TransactionHandler) QuickAdd(c *gin.Context) {
 		"recurring": recurring,
 		"recent":    recent,
 	})
+}
+
+// PATCH /api/transactions/:id
+func (h *TransactionHandler) Update(c *gin.Context) {
+	userID := c.GetString("userID")
+	id := c.Param("id")
+
+	var tx models.Transaction
+	if err := h.db.Where("id = ? AND user_id = ?", id, userID).First(&tx).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
+		return
+	}
+
+	var req createTransactionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	date, err := time.Parse("2006-01-02", req.Date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format, expected YYYY-MM-DD"})
+		return
+	}
+
+	tx.Type = req.Type
+	tx.Name = req.Name
+	tx.Amount = req.Amount
+	tx.Date = date
+	tx.CategoryID = req.CategoryID
+	tx.CardAliasID = req.CardAliasID
+	tx.Description = req.Description
+
+	if err := h.db.Save(&tx).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not update transaction"})
+		return
+	}
+
+	c.JSON(http.StatusOK, tx)
+}
+
+// DELETE /api/transactions/:id
+func (h *TransactionHandler) Delete(c *gin.Context) {
+	userID := c.GetString("userID")
+	id := c.Param("id")
+
+	result := h.db.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Transaction{})
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not delete transaction"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // GET /api/transactions

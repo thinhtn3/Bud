@@ -2,12 +2,13 @@ package models
 
 import "time"
 
-// TransactionType distinguishes expenses from income entries.
+// TransactionType distinguishes expenses from income/reimbursement entries.
 type TransactionType string
 
 const (
-	TransactionTypeExpense TransactionType = "expense"
-	TransactionTypeIncome  TransactionType = "income"
+	TransactionTypeExpense       TransactionType = "expense"
+	TransactionTypeIncome        TransactionType = "income"
+	TransactionTypeReimbursement TransactionType = "reimbursement"
 )
 
 type Transaction struct {
@@ -19,5 +20,6 @@ type Transaction struct {
 	Amount      float64         `gorm:"type:decimal(12,2);not null" json:"amount"`
 	Date        time.Time       `gorm:"type:date;not null;index:idx_transactions_user_date,sort:desc" json:"date"`
 	CategoryID  *string         `gorm:"type:uuid" json:"category_id"`
+	CardAliasID *string         `gorm:"type:uuid" json:"card_alias_id"`
 	CreatedAt   time.Time       `gorm:"autoCreateTime" json:"created_at"`
 }

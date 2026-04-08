@@ -2,6 +2,9 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
+import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
+import { getCategoryIcon } from '@/components/widgets/categoryIcons'
+import { TagIcon } from 'lucide-react'
 
 interface QuickAddData {
   recurring: Transaction[]
@@ -77,6 +80,9 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
     : null
 
   function renderChip(tx: Transaction) {
+    const categoryName = user?.categories?.find(c => c.id === tx.category_id)?.name ?? null
+    const Icon = categoryName ? getCategoryIcon(categoryName) : <TagIcon size={14} />
+
     return (
       <button
         key={tx.id}
@@ -84,7 +90,15 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
         onClick={() => selected?.id === tx.id ? dismiss() : prefill(tx)}
         type="button"
       >
-        <span className="bud-qa-chip-name">{tx.name}</span>
+        <span className="bud-qa-chip-icon">
+          <Icon size={14} />
+        </span>
+        <span className="bud-qa-chip-content">
+          <span className="bud-qa-chip-name">{tx.name}</span>
+          {categoryName && (
+            <span className="bud-qa-chip-category">{categoryName}</span>
+          )}
+        </span>
         <span className={`bud-qa-chip-amt bud-qa-chip-amt-${tx.type}`}>
           {tx.type === 'expense' ? '−' : '+'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
         </span>
@@ -140,16 +154,7 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
                 />
               </div>
 
-              <select
-                value={categoryId}
-                onChange={e => setCategoryId(e.target.value)}
-                className="bud-select"
-              >
-                <option value="">No category</option>
-                {user?.categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+              <CategoryDropdown value={categoryId} onChange={setCategoryId} />
 
               {error && <p className="bud-error">{error}</p>}
 
@@ -211,16 +216,7 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
                 />
               </div>
 
-              <select
-                value={categoryId}
-                onChange={e => setCategoryId(e.target.value)}
-                className="bud-select"
-              >
-                <option value="">No category</option>
-                {user?.categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+              <CategoryDropdown value={categoryId} onChange={setCategoryId} />
 
               {error && <p className="bud-error">{error}</p>}
 
