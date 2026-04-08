@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '@/lib/api'
 import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
+import { CardAliasDropdown } from '@/components/widgets/CardAliasDropdown'
 import type { Transaction } from '@/types'
 
 interface Props {
@@ -18,6 +19,7 @@ export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClos
   const [amount, setAmount]           = useState(String(tx.amount))
   const [date, setDate]               = useState(tx.date.includes('T') ? tx.date.split('T')[0] : tx.date)
   const [categoryId, setCategoryId]   = useState(tx.category_id ?? '')
+  const [cardAliasId, setCardAliasId] = useState(tx.card_alias_id ?? '')
   const [description, setDescription] = useState(tx.description ?? '')
   const [saving, setSaving]           = useState(false)
   const [deleting, setDeleting]       = useState(false)
@@ -43,6 +45,7 @@ export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClos
         amount: parseFloat(amount),
         date,
         category_id: categoryId || null,
+        card_alias_id: cardAliasId || null,
         description: description || null,
       })
       onSave(updated)
@@ -82,7 +85,7 @@ export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClos
         {/* Type toggle */}
         <div className="bud-toggle" data-active={type} style={{ marginBottom: 18 }}>
           <div className="bud-toggle-thumb" />
-          {(['expense', 'income'] as const).map(t => (
+          {(['expense', 'reimbursement'] as const).map(t => (
             <button
               key={t}
               type="button"
@@ -124,10 +127,11 @@ export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClos
             />
           </div>
 
-          <CategoryDropdown value={categoryId} onChange={setCategoryId} />
+            <CategoryDropdown value={categoryId} onChange={setCategoryId} />
+            <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
 
-          <input
-            placeholder="Description (optional)"
+            <input
+              placeholder="Description (optional)"
             value={description}
             onChange={e => setDescription(e.target.value)}
             className="bud-input"
@@ -145,6 +149,7 @@ export function EditTransactionModal({ transaction: tx, onSave, onDelete, onClos
             </button>
             <button
               type="button"
+              formNoValidate
               disabled={busy}
               className="bud-modal-delete"
               onClick={handleDelete}

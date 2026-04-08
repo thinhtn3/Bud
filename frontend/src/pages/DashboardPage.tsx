@@ -13,6 +13,7 @@ import { CategoryBreakdownWidget } from '@/components/widgets/CategoryBreakdownW
 import { useDragReorder } from '@/components/widgets/useDragReorder'
 import { WIDGET_REGISTRY, type WidgetType, type WidgetSize, type WidgetInstance } from '@/components/widgets/widgetRegistry'
 import { parseLocalDate, formatMonthYear } from '@/lib/dateUtils'
+import { PreferencesModal } from '@/components/PreferencesModal'
 
 const STORAGE_KEY = 'bud-dashboard-widgets'
 
@@ -65,6 +66,7 @@ export default function DashboardPage() {
   const [widgets, setWidgets] = useState<WidgetInstance[]>([])
   const [widgetsReady, setWidgetsReady] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [prefsOpen, setPrefsOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
 
   const now = new Date()
@@ -222,7 +224,18 @@ export default function DashboardPage() {
         <header className="bud-header">
           <div>
             <p className="bud-greeting">Good {getTimeOfDay()}</p>
-            <h1 className="bud-name">{user?.display_name}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h1 className="bud-name">{user?.display_name}</h1>
+              <button
+                className="bud-prefs-trigger"
+                onClick={() => setPrefsOpen(true)}
+                aria-label="Open preferences"
+              >
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M9.5 1.5a1.414 1.414 0 0 1 2 2L4 11H1.5V8.5L9.5 1.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
             <p className="bud-email">{user?.email}</p>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -357,6 +370,7 @@ export default function DashboardPage() {
           onAdd={addWidget}
           onClose={() => setPickerOpen(false)}
         />
+        {prefsOpen && <PreferencesModal onClose={() => setPrefsOpen(false)} />}
       </div>
     </>
   )

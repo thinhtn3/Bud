@@ -4,6 +4,7 @@ import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
 import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
 import { getCategoryIcon } from '@/components/widgets/categoryIcons'
+import { TagIcon } from 'lucide-react'
 
 interface QuickAddData {
   recurring: Transaction[]
@@ -80,7 +81,7 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
 
   function renderChip(tx: Transaction) {
     const categoryName = user?.categories?.find(c => c.id === tx.category_id)?.name ?? null
-    const Icon = categoryName ? getCategoryIcon(categoryName) : Tag
+    const Icon = categoryName ? getCategoryIcon(categoryName) : <TagIcon size={14} />
 
     return (
       <button

@@ -12,6 +12,7 @@ func Migrate() {
 	err := DB.AutoMigrate(
 		&models.Profile{},
 		&models.Category{},
+		&models.CardAlias{},
 		&models.Transaction{},
 		&models.Widget{},
 	)

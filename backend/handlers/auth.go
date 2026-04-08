@@ -112,6 +112,7 @@ type meResponse struct {
 	Email       string              `json:"email"`
 	DisplayName string              `json:"display_name"`
 	Categories  []models.Category   `json:"categories"`
+	CardAliases []models.CardAlias  `json:"card_aliases"`
 	Preferences preferencesResponse `json:"preferences"`
 }
 
@@ -129,6 +130,11 @@ func (h *AuthHandler) loadUserData(userID, email string) (*meResponse, error) {
 		return nil, err
 	}
 
+	var cardAliases []models.CardAlias
+	if err := h.db.Where("user_id = ?", userID).Order("created_at desc").Find(&cardAliases).Error; err != nil {
+		return nil, err
+	}
+
 	goals := []string{}
 	_ = json.Unmarshal([]byte(profile.FinancialGoals), &goals)
 
@@ -137,6 +143,7 @@ func (h *AuthHandler) loadUserData(userID, email string) (*meResponse, error) {
 		Email:       email,
 		DisplayName: profile.DisplayName,
 		Categories:  categories,
+		CardAliases: cardAliases,
 		Preferences: preferencesResponse{
 			OnboardingCompleted: profile.OnboardingCompleted,
 			BudgetPeriod:        profile.BudgetPeriod,

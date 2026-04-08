@@ -1,14 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
+import type { Category, CardAlias } from '@/types'
 
 const API_URL = import.meta.env.VITE_API_URL as string
-
-export interface Category {
-  id: string
-  user_id: string
-  name: string
-}
 
 interface UserPreferences {
   onboarding_completed: boolean
@@ -25,6 +20,7 @@ interface User {
   email: string
   display_name: string
   categories: Category[]
+  card_aliases: CardAlias[]
   preferences: UserPreferences
 }
 
@@ -36,6 +32,9 @@ interface AuthContextValue {
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   addCategory: (name: string) => Promise<Category>
+  addCardAlias: (card: Omit<CardAlias, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<CardAlias>
+  updateCardAlias: (id: string, card: Omit<CardAlias, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<CardAlias>
+  deleteCardAlias: (id: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -134,6 +133,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return cat
   }, [])
 
+  const addCardAlias = useCallback(async (card: Omit<CardAlias, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<CardAlias> => {
+    const res = await fetch(`${API_URL}/api/cards`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(card),
+    })
+    if (!res.ok) throw new Error('Failed to create card alias')
+    const newCard = await res.json() as CardAlias
+    setUser(prev => prev ? { ...prev, card_aliases: [newCard, ...prev.card_aliases] } : prev)
+    return newCard
+  }, [])
+
+  const updateCardAlias = useCallback(async (id: string, card: Omit<CardAlias, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<CardAlias> => {
+    const res = await fetch(`${API_URL}/api/cards/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(card),
+    })
+    if (!res.ok) throw new Error('Failed to update card alias')
+    const updatedCard = await res.json() as CardAlias
+    setUser(prev => prev ? {
+      ...prev,
+      card_aliases: prev.card_aliases.map(c => c.id === id ? updatedCard : c)
+    } : prev)
+    return updatedCard
+  }, [])
+
+  const deleteCardAlias = useCallback(async (id: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/api/cards/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+    if (!res.ok) throw new Error('Failed to delete card alias')
+    setUser(prev => prev ? {
+      ...prev,
+      card_aliases: prev.card_aliases.filter(c => c.id !== id)
+    } : prev)
+  }, [])
+
   const logout = useCallback(async () => {
     await fetch(`${API_URL}/api/auth/session`, {
       method: 'DELETE',
@@ -144,7 +184,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, addCategory }}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      refreshUser,
+      addCategory,
+      addCardAlias,
+      updateCardAlias,
+      deleteCardAlias
+    }}>
       {children}
     </AuthContext.Provider>
   )

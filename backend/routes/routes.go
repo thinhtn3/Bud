@@ -26,6 +26,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	widgetHandler := handlers.NewWidgetHandler(db.DB)
 	preferencesHandler := handlers.NewPreferencesHandler(db.DB)
 	categoryHandler := handlers.NewCategoryHandler(db.DB)
+	cardAliasHandler := handlers.NewCardAliasHandler(db.DB)
 
 	// Auth routes — no JWT middleware
 	auth := r.Group("/api/auth")
@@ -45,6 +46,11 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		api.PUT("/dashboard/widgets", widgetHandler.Save)
 
 		api.POST("/categories", categoryHandler.Create)
+
+		api.GET("/cards", cardAliasHandler.List)
+		api.POST("/cards", cardAliasHandler.Create)
+		api.PUT("/cards/:id", cardAliasHandler.Update)
+		api.DELETE("/cards/:id", cardAliasHandler.Delete)
 
 		api.GET("/transactions/quick-add", transactionHandler.QuickAdd)
 		api.GET("/transactions", transactionHandler.List)

@@ -61,7 +61,7 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
                 <div className="bud-tx-left">
                   {(() => {
                     const cat = getCategoryMeta(tx.category_id)
-                    const Icon = cat ? cat.Icon : tx.type === 'income' ? ArrowUp : ArrowDown
+                    const Icon = cat ? cat.Icon : (tx.type === 'income' || tx.type === 'reimbursement') ? ArrowUp : ArrowDown
                     return (
                       <div className={`bud-tx-icon-wrap ${tx.type}`}>
                         <Icon size={14} />
@@ -82,7 +82,7 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span className={`bud-tx-amount ${tx.type}`}>
-                    {tx.type === 'income' ? '+' : '−'}${tx.amount.toFixed(2)}
+                    {tx.type === 'income' || tx.type === 'reimbursement' ? '+' : '−'}${tx.amount.toFixed(2)}
                   </span>
                   <span className="bud-tx-edit-hint">✎</span>
                 </div>

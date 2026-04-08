@@ -61,21 +61,26 @@ interface Props {
 export function SpendingSummaryWidget({ transactions, allTransactions, loading, size = 'large', budgetAmount, budgetPeriod, isCurrentMonth = true }: Props) {
   const [period, setPeriod] = useState<Period>('biweekly')
 
-  const totalIncome   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-  const net           = totalIncome - totalExpenses
+  const totalIncome         = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const totalReimbursements = transactions.filter(t => t.type === 'reimbursement').reduce((s, t) => s + t.amount, 0)
+  const totalExpenses       = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const netExpenses         = totalExpenses - totalReimbursements
+  const net                 = totalIncome + totalReimbursements - totalExpenses
 
-  const periodTxs      = filterByPeriod(allTransactions, period)
-  const periodExpenses = periodTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-  const periodCount    = periodTxs.filter(t => t.type === 'expense').length
+  const periodTxs            = filterByPeriod(allTransactions, period)
+  const periodExpenses       = periodTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const periodReimbursements = periodTxs.filter(t => t.type === 'reimbursement').reduce((s, t) => s + t.amount, 0)
+  const netPeriodExpenses    = periodExpenses - periodReimbursements
+  const periodCount          = periodTxs.filter(t => t.type === 'expense').length
 
-  const incomeCount  = transactions.filter(t => t.type === 'income').length
-  const expenseCount = transactions.filter(t => t.type === 'expense').length
+  const expenseCount        = transactions.filter(t => t.type === 'expense').length
+  const reimbursementCount  = transactions.filter(t => t.type === 'reimbursement').length
+  const incomeCount         = transactions.filter(t => t.type === 'income').length
 
   const hasBudget    = !!budgetAmount && budgetAmount > 0 && !!budgetPeriod
   const periodBudget = hasBudget ? deriveBudget(budgetAmount!, budgetPeriod!, period) : null
-  const budgetPct    = periodBudget ? Math.min(periodExpenses / periodBudget, 1) : null
-  const overBudget   = periodBudget !== null && periodExpenses > periodBudget
+  const budgetPct    = periodBudget ? Math.min(netPeriodExpenses / periodBudget, 1) : null
+  const overBudget   = periodBudget !== null && netPeriodExpenses > periodBudget
 
   function fmt(n: number) {
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -121,7 +126,7 @@ export function SpendingSummaryWidget({ transactions, allTransactions, loading, 
       {/* Total Expenses */}
       <div className="bud-stat-card bud-stat-expense">
         <div className="bud-stat-top">
-          <span className="bud-stat-label">Total Expenses</span>
+          <span className="bud-stat-label">Gross Expenses</span>
           <span className="bud-stat-icon bud-stat-icon-expense">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M7 2v10M3 9l4 3 4-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -132,24 +137,27 @@ export function SpendingSummaryWidget({ transactions, allTransactions, loading, 
         <p className="bud-stat-sub">{expenseCount} transaction{expenseCount !== 1 ? 's' : ''}</p>
       </div>
 
-      {/* Total Income */}
+      {/* Income & Reimbursements */}
       <div className="bud-stat-card bud-stat-income">
-        <div className="bud-stat-top">
-          <span className="bud-stat-label">Total Income</span>
-          <span className="bud-stat-icon bud-stat-icon-income">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 12V2M3 5l4-3 4 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </span>
+        <p className="bud-stat-label" style={{ marginBottom: 14 }}>Income & Reimbursed</p>
+        <div className="bud-inco-rows">
+          <div className="bud-inco-row">
+            <span className="bud-inco-label bud-inco-label-income">Income</span>
+            <span className="bud-inco-amount bud-inco-amount-income">+${fmt(totalIncome)}</span>
+            <span className="bud-stat-sub">{incomeCount} transaction{incomeCount !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="bud-inco-row">
+            <span className="bud-inco-label bud-inco-label-reimburse">Reimbursed</span>
+            <span className="bud-inco-amount bud-inco-amount-reimburse">+${fmt(totalReimbursements)}</span>
+            <span className="bud-stat-sub">{reimbursementCount} transaction{reimbursementCount !== 1 ? 's' : ''}</span>
+          </div>
         </div>
-        <p className="bud-stat-amount bud-stat-amount-income">+${fmt(totalIncome)}</p>
-        <p className="bud-stat-sub">{incomeCount} transaction{incomeCount !== 1 ? 's' : ''}</p>
       </div>
 
       {/* Period Spending — only meaningful for current month */}
       {isCurrentMonth && <div className="bud-stat-card bud-stat-count">
         <div className="bud-stat-top">
-          <span className="bud-stat-label">Spending</span>
+          <span className="bud-stat-label">Net Spending</span>
           <span className="bud-stat-icon bud-stat-icon-count">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/>
@@ -169,7 +177,7 @@ export function SpendingSummaryWidget({ transactions, allTransactions, loading, 
           ))}
         </div>
         <p className={`bud-stat-amount ${overBudget ? 'bud-stat-amount-expense' : 'bud-stat-amount-count'}`}>
-          −${fmt(periodExpenses)}
+          −${fmt(netPeriodExpenses)}
         </p>
         {periodBudget !== null ? (
           <>

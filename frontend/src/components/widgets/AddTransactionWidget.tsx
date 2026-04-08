@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
 import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
+import { CardAliasDropdown } from '@/components/widgets/CardAliasDropdown'
 
 interface Props {
   onAdd: (tx: Transaction) => void
@@ -10,11 +11,12 @@ interface Props {
 
 export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
 
-  const [type, setType] = useState<'expense' | 'income'>('expense')
+  const [type, setType] = useState<'expense' | 'reimbursement'>('expense')
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [categoryId, setCategoryId] = useState('')
+  const [cardAliasId, setCardAliasId] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +32,7 @@ export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
         amount: parseFloat(amount),
         date,
         category_id: categoryId || null,
+        card_alias_id: cardAliasId || null,
         description: description || null,
       })
       onAdd(tx)
@@ -37,6 +40,7 @@ export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
       setAmount('')
       setDescription('')
       setCategoryId('')
+      setCardAliasId('')
       setDate(new Date().toISOString().split('T')[0])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add transaction')
@@ -48,7 +52,7 @@ export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
   const toggle = (
     <div className="bud-toggle" data-active={type}>
       <div className="bud-toggle-thumb" />
-      {(['expense', 'income'] as const).map(t => (
+      {(['expense', 'reimbursement'] as const).map(t => (
         <button key={t} type="button" data-value={t} onClick={() => setType(t)} className="bud-toggle-btn">
           {t}
         </button>
@@ -87,6 +91,7 @@ export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
             className="bud-input"
           />
           <CategoryDropdown value={categoryId} onChange={setCategoryId} />
+          <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
           <input
             placeholder="Description (optional)"
             value={description}
@@ -95,7 +100,7 @@ export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
           />
           {error && <p className="bud-error">{error}</p>}
           <button type="submit" disabled={loading} className="bud-submit">
-            {loading ? 'Adding…' : type === 'expense' ? 'Add Expense' : 'Add Income'}
+            {loading ? 'Adding…' : type === 'expense' ? 'Add Expense' : 'Add Reimbursement'}
           </button>
         </form>
       </div>
@@ -136,6 +141,7 @@ export function AddTransactionWidget({ onAdd, size = 'medium' }: Props) {
         </div>
 
         <CategoryDropdown value={categoryId} onChange={setCategoryId} />
+        <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
 
         <input
           placeholder="Description (optional)"
