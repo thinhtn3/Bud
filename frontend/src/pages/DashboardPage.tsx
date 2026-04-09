@@ -15,6 +15,7 @@ import { useDragReorder } from '@/components/widgets/useDragReorder'
 import { WIDGET_REGISTRY, type WidgetType, type WidgetSize, type WidgetInstance } from '@/components/widgets/widgetRegistry'
 import { parseLocalDate, formatMonthYear } from '@/lib/dateUtils'
 import { PreferencesModal } from '@/components/PreferencesModal'
+import { Navbar } from '@/components/Navbar'
 
 const STORAGE_KEY = 'bud-dashboard-widgets'
 
@@ -60,7 +61,7 @@ function syncToBackend(widgets: WidgetInstance[]) {
 }
 
 export default function DashboardPage() {
-  const { user, logout, refreshUser } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loadingTx, setLoadingTx] = useState(true)
   const [errorTx, setErrorTx] = useState<string | null>(null)
@@ -221,7 +222,8 @@ export default function DashboardPage() {
   return (
     <>
       <style>{budStyles}</style>
-      <div className="bud-root">
+      <Navbar />
+      <div className="bud-root" style={{ paddingLeft: 220 }}>
         <div className="bud-bg-blob bud-bg-blob-1" />
         <div className="bud-bg-blob bud-bg-blob-2" />
         <div className="bud-bg-blob bud-bg-blob-3" />
@@ -256,7 +258,6 @@ export default function DashboardPage() {
                 </button>
               </>
             )}
-            <button className="bud-signout" onClick={logout}>Sign out</button>
           </div>
         </header>
 

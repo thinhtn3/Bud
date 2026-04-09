@@ -1857,4 +1857,187 @@ export const budStyles = `
   }
   .bud-color-swatch:hover { transform: scale(1.15); }
   .bud-color-swatch.active { border-color: #fff; transform: scale(1.1); }
+
+  /* ── Sidebar Navbar ───────────────────────────────────── */
+  .bud-navbar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 180px;
+    background: #0f1011;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 12px 20px;
+    z-index: 50;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  }
+
+  /* Brand */
+  .bud-nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 8px 0;
+    margin-bottom: 28px;
+  }
+  .bud-nav-brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .bud-nav-brand-name {
+    font-size: 14px;
+    font-weight: 590;
+    letter-spacing: -0.2px;
+    color: #d0d6e0;
+    font-feature-settings: "cv01", "ss03";
+  }
+
+  /* Nav section */
+  .bud-nav-items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+  }
+
+  /* Nav item — shared */
+  .bud-nav-item {
+    width: 100%;
+    height: 34px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 9px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 100ms ease;
+    text-align: left;
+  }
+  .bud-nav-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #62666d;
+    transition: color 100ms ease;
+  }
+  .bud-nav-item-label {
+    font-size: 13px;
+    font-weight: 510;
+    letter-spacing: -0.13px;
+    color: #62666d;
+    font-feature-settings: "cv01", "ss03";
+    transition: color 100ms ease;
+  }
+
+  .bud-nav-item:hover .bud-nav-item-icon,
+  .bud-nav-item:hover .bud-nav-item-label {
+    color: #d0d6e0;
+  }
+  .bud-nav-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  /* Active state */
+  .bud-nav-item--active {
+    background: rgba(113, 112, 255, 0.09);
+  }
+  .bud-nav-item--active .bud-nav-item-icon,
+  .bud-nav-item--active .bud-nav-item-label {
+    color: #f7f8f8;
+  }
+  .bud-nav-item--active:hover {
+    background: rgba(113, 112, 255, 0.13);
+  }
+  .bud-nav-item--active:hover .bud-nav-item-icon,
+  .bud-nav-item--active:hover .bud-nav-item-label {
+    color: #f7f8f8;
+  }
+
+  /* Profile block */
+  .bud-nav-profile-wrap {
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 12px;
+  }
+  .bud-nav-profile {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 8px;
+    border-radius: 7px;
+    cursor: default;
+    transition: background 100ms ease;
+  }
+  .bud-nav-profile:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .bud-nav-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(113, 112, 255, 0.14);
+    color: #7170ff;
+    font-size: 11px;
+    font-weight: 600;
+    font-feature-settings: "cv01", "ss03";
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0.3px;
+  }
+  .bud-nav-profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+  }
+  .bud-nav-profile-name {
+    font-size: 12px;
+    font-weight: 510;
+    color: #d0d6e0;
+    font-feature-settings: "cv01", "ss03";
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bud-nav-profile-email {
+    font-size: 11px;
+    font-weight: 400;
+    color: #4a4f57;
+    font-feature-settings: "cv01", "ss03";
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bud-nav-signout-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: #4a4f57;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 100ms ease, color 100ms ease, background 100ms ease;
+  }
+  .bud-nav-profile:hover .bud-nav-signout-btn {
+    opacity: 1;
+  }
+  .bud-nav-signout-btn:hover {
+    color: #8a8f98;
+    background: rgba(255, 255, 255, 0.05);
+  }
 `
