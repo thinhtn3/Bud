@@ -5,6 +5,7 @@ import OnboardingRoute from '@/components/OnboardingRoute'
 import AuthPage from '@/pages/AuthPage'
 import DashboardPage from '@/pages/DashboardPage'
 import OnboardingPage from '@/pages/OnboardingPage'
+import SplitPage from '@/pages/SplitPage'
 
 export default function App() {
   return (
@@ -26,6 +27,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/split"
+            element={
+              <ProtectedRoute>
+                <SplitPage />
               </ProtectedRoute>
             }
           />

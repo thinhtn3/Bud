@@ -9,6 +9,63 @@ export interface Transaction {
   card_alias_id: string | null
 }
 
+export interface Group {
+  id: string
+  name: string
+  created_by: string
+  invite_code: string
+  created_at: string
+  member_count?: number
+}
+
+export interface GroupMember {
+  user_id: string
+  display_name: string
+  joined_at: string
+}
+
+export interface GroupDetail extends Group {
+  members: GroupMember[]
+}
+
+export interface GroupExpenseSplit {
+  user_id: string
+  display_name: string
+  amount: number
+}
+
+export interface GroupExpense {
+  id: string
+  group_id: string
+  paid_by: string
+  paid_by_name: string
+  name: string
+  amount: number
+  date: string
+  description: string | null
+  created_at: string
+  splits: GroupExpenseSplit[]
+}
+
+export interface MemberBalance {
+  user_id: string
+  display_name: string
+  balance: number
+}
+
+export interface Settlement {
+  from_user_id: string
+  from_display_name: string
+  to_user_id: string
+  to_display_name: string
+  amount: number
+}
+
+export interface GroupBalances {
+  net_balances: MemberBalance[]
+  settlements: Settlement[]
+}
+
 export interface CardAlias {
   id: string
   user_id: string

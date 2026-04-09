@@ -15,6 +15,10 @@ func Migrate() {
 		&models.CardAlias{},
 		&models.Transaction{},
 		&models.Widget{},
+		&models.Group{},
+		&models.GroupMember{},
+		&models.GroupExpense{},
+		&models.GroupExpenseSplit{},
 	)
 	if err != nil {
 		log.Fatalf("migration failed: %v", err)
@@ -75,5 +79,27 @@ func addForeignKeys() {
 	addFKIfNotExists("fk_transactions_card_alias_id", "transactions",
 		`ALTER TABLE transactions ADD CONSTRAINT fk_transactions_card_alias_id
 		 FOREIGN KEY (card_alias_id) REFERENCES card_aliases(id) ON DELETE SET NULL`)
+	// Group FKs
+	addFKIfNotExists("fk_groups_created_by", "groups",
+		`ALTER TABLE groups ADD CONSTRAINT fk_groups_created_by
+		 FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_members_group_id", "group_members",
+		`ALTER TABLE group_members ADD CONSTRAINT fk_group_members_group_id
+		 FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_members_user_id", "group_members",
+		`ALTER TABLE group_members ADD CONSTRAINT fk_group_members_user_id
+		 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_expenses_group_id", "group_expenses",
+		`ALTER TABLE group_expenses ADD CONSTRAINT fk_group_expenses_group_id
+		 FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_expenses_paid_by", "group_expenses",
+		`ALTER TABLE group_expenses ADD CONSTRAINT fk_group_expenses_paid_by
+		 FOREIGN KEY (paid_by) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_expense_splits_expense_id", "group_expense_splits",
+		`ALTER TABLE group_expense_splits ADD CONSTRAINT fk_group_expense_splits_expense_id
+		 FOREIGN KEY (expense_id) REFERENCES group_expenses(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_expense_splits_user_id", "group_expense_splits",
+		`ALTER TABLE group_expense_splits ADD CONSTRAINT fk_group_expense_splits_user_id
+		 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
 	log.Println("foreign key constraints verified")
 }
