@@ -38,3 +38,14 @@ type GroupExpenseSplit struct {
 	UserID    string  `gorm:"type:uuid;not null" json:"user_id"`
 	Amount    float64 `gorm:"type:decimal(12,2);not null" json:"amount"`
 }
+
+// GroupSettlement records a direct payment between two group members.
+type GroupSettlement struct {
+	ID         string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	GroupID    string    `gorm:"type:uuid;not null;index" json:"group_id"`
+	FromUserID string    `gorm:"type:uuid;not null" json:"from_user_id"` // who paid
+	ToUserID   string    `gorm:"type:uuid;not null" json:"to_user_id"`   // who received
+	Amount     float64   `gorm:"type:decimal(12,2);not null" json:"amount"`
+	Date       time.Time `gorm:"type:date;not null" json:"date"`
+	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
+}

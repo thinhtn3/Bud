@@ -19,6 +19,7 @@ func Migrate() {
 		&models.GroupMember{},
 		&models.GroupExpense{},
 		&models.GroupExpenseSplit{},
+		&models.GroupSettlement{},
 	)
 	if err != nil {
 		log.Fatalf("migration failed: %v", err)
@@ -104,5 +105,14 @@ func addForeignKeys() {
 	addFKIfNotExists("fk_group_expense_splits_user_id", "group_expense_splits",
 		`ALTER TABLE group_expense_splits ADD CONSTRAINT fk_group_expense_splits_user_id
 		 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_settlements_group_id", "group_settlements",
+		`ALTER TABLE group_settlements ADD CONSTRAINT fk_group_settlements_group_id
+		 FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_settlements_from_user_id", "group_settlements",
+		`ALTER TABLE group_settlements ADD CONSTRAINT fk_group_settlements_from_user_id
+		 FOREIGN KEY (from_user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_settlements_to_user_id", "group_settlements",
+		`ALTER TABLE group_settlements ADD CONSTRAINT fk_group_settlements_to_user_id
+		 FOREIGN KEY (to_user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
 	log.Println("foreign key constraints verified")
 }

@@ -15,8 +15,6 @@ export interface Transaction {
   card_alias_id: string | null
   group_expense_id: string | null
   group_my_share: number | null
-  group_paid_by_id?: string | null
-  group_paid_by_name?: string | null
   group_reimbursements?: GroupReimbursement[]
 }
 
@@ -72,9 +70,20 @@ export interface Settlement {
   amount: number
 }
 
+export interface SettlementRecord {
+  id: string
+  from_user_id: string
+  from_display_name: string
+  to_user_id: string
+  to_display_name: string
+  amount: number
+  date: string
+}
+
 export interface GroupBalances {
   net_balances: MemberBalance[]
   settlements: Settlement[]
+  history: SettlementRecord[]
 }
 
 export interface CardAlias {

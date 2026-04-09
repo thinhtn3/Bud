@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../lib/api'
-import type { GroupDetail as GroupDetailType, GroupExpense, GroupBalances } from '../../types'
+import type { GroupDetail as GroupDetailType, GroupExpense, GroupBalances, SettlementRecord } from '../../types'
 import { splitStyles } from './splitStyles'
 import AddExpenseModal from './AddExpenseModal'
 import BalancesPanel from './BalancesPanel'
@@ -75,7 +75,11 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
   function handleExpenseAdded(expense: GroupExpense) {
     setExpenses(prev => [expense, ...prev])
     setAddOpen(false)
-    // Refresh balances
+    api.get<GroupBalances>(`/api/groups/${groupId}/balances`).then(setBalances)
+  }
+
+  function handleSettled(record: SettlementRecord) {
+    // Refresh balances to reflect the settlement
     api.get<GroupBalances>(`/api/groups/${groupId}/balances`).then(setBalances)
   }
 
@@ -183,7 +187,12 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
       )}
 
       {tab === 'balances' && balances && (
-        <BalancesPanel balances={balances} currentUserId={currentUserId} />
+        <BalancesPanel
+          balances={balances}
+          currentUserId={currentUserId}
+          groupId={groupId}
+          onSettled={handleSettled}
+        />
       )}
 
       <AddExpenseModal

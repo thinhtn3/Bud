@@ -86,9 +86,20 @@ type settlement struct {
 	Amount          float64 `json:"amount"`
 }
 
+type settlementRecord struct {
+	ID              string    `json:"id"`
+	FromUserID      string    `json:"from_user_id"`
+	FromDisplayName string    `json:"from_display_name"`
+	ToUserID        string    `json:"to_user_id"`
+	ToDisplayName   string    `json:"to_display_name"`
+	Amount          float64   `json:"amount"`
+	Date            time.Time `json:"date"`
+}
+
 type balancesResponse struct {
-	NetBalances []memberBalance `json:"net_balances"`
-	Settlements []settlement    `json:"settlements"`
+	NetBalances []memberBalance   `json:"net_balances"`
+	Settlements []settlement      `json:"settlements"` // suggested remaining
+	History     []settlementRecord `json:"history"`    // past settlements
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -119,6 +130,50 @@ func (h *GroupHandler) requireMember(c *gin.Context, groupID, userID string) boo
 		return false
 	}
 	return true
+}
+
+// computeSettlementsFromNet runs the greedy algorithm directly on a pre-built net map.
+func computeSettlementsFromNet(net map[string]float64, nameMap map[string]string) []settlement {
+	type entry struct {
+		userID string
+		amount float64
+	}
+	const eps = 0.005
+	var creditors, debtors []entry
+	for uid, bal := range net {
+		if bal > eps {
+			creditors = append(creditors, entry{uid, bal})
+		} else if bal < -eps {
+			debtors = append(debtors, entry{uid, -bal})
+		}
+	}
+	var result []settlement
+	for len(creditors) > 0 && len(debtors) > 0 {
+		sort.Slice(creditors, func(i, j int) bool { return creditors[i].amount > creditors[j].amount })
+		sort.Slice(debtors, func(i, j int) bool { return debtors[i].amount > debtors[j].amount })
+		cr, db := creditors[0], debtors[0]
+		transfer := math.Round(math.Min(cr.amount, db.amount)*100) / 100
+		result = append(result, settlement{
+			FromUserID:      db.userID,
+			FromDisplayName: nameMap[db.userID],
+			ToUserID:        cr.userID,
+			ToDisplayName:   nameMap[cr.userID],
+			Amount:          transfer,
+		})
+		cr.amount -= transfer
+		db.amount -= transfer
+		if cr.amount > eps {
+			creditors[0] = cr
+		} else {
+			creditors = creditors[1:]
+		}
+		if db.amount > eps {
+			debtors[0] = db
+		} else {
+			debtors = debtors[1:]
+		}
+	}
+	return result
 }
 
 // computeSettlements runs the greedy debt-simplification algorithm.
@@ -384,31 +439,27 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 				return err
 			}
 		}
-		// Auto-create personal transactions for all members so the expense
-		// appears on everyone's dashboard:
-		//   - payer gets the full fronted amount with their actual share noted
-		//   - each other member gets their share as an expense (what they owe)
+		// Auto-create a personal transaction for the payer only.
+		// Shows the full fronted amount on their dashboard; group_my_share
+		// records their actual cost for supplementary display.
+		var payerShare float64
 		for _, s := range req.Splits {
-			share := s.Amount
-			amount := req.Amount
-			if s.UserID != req.PaidBy {
-				amount = s.Amount // non-payer: only their share
-			}
-			memberTx := models.Transaction{
-				UserID:         s.UserID,
-				Type:           models.TransactionTypeExpense,
-				Name:           req.Name,
-				Amount:         amount,
-				Date:           date,
-				Description:    req.Description,
-				GroupExpenseID: &expense.ID,
-				GroupMyShare:   &share,
-			}
-			if err := tx.Create(&memberTx).Error; err != nil {
-				return err
+			if s.UserID == req.PaidBy {
+				payerShare = s.Amount
+				break
 			}
 		}
-		return nil
+		payerTx := models.Transaction{
+			UserID:         req.PaidBy,
+			Type:           models.TransactionTypeExpense,
+			Name:           req.Name,
+			Amount:         req.Amount,
+			Date:           date,
+			Description:    req.Description,
+			GroupExpenseID: &expense.ID,
+			GroupMyShare:   &payerShare,
+		}
+		return tx.Create(&payerTx).Error
 	})
 	if txErr != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create expense"})
@@ -514,6 +565,94 @@ func (h *GroupHandler) DeleteExpense(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// POST /api/groups/:id/settlements
+func (h *GroupHandler) CreateSettlement(c *gin.Context) {
+	userID := c.GetString("userID")
+	groupID := c.Param("id")
+
+	if !h.requireMember(c, groupID, userID) {
+		return
+	}
+
+	var req struct {
+		ToUserID string  `json:"to_user_id" binding:"required"`
+		Amount   float64 `json:"amount" binding:"required,gt=0"`
+		Date     string  `json:"date"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if userID == req.ToUserID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot settle with yourself"})
+		return
+	}
+	if !h.isMember(groupID, req.ToUserID) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "to_user_id is not a member of this group"})
+		return
+	}
+
+	date := time.Now()
+	if req.Date != "" {
+		if d, err := time.Parse("2006-01-02", req.Date); err == nil {
+			date = d
+		}
+	}
+
+	var group models.Group
+	h.db.First(&group, "id = ?", groupID)
+	settlementName := "Settlement · " + group.Name
+	nameMap := h.buildNameMap(map[string]bool{userID: true, req.ToUserID: true})
+
+	var s models.GroupSettlement
+	txErr := h.db.Transaction(func(tx *gorm.DB) error {
+		s = models.GroupSettlement{
+			GroupID:    groupID,
+			FromUserID: userID,
+			ToUserID:   req.ToUserID,
+			Amount:     req.Amount,
+			Date:       date,
+		}
+		if err := tx.Create(&s).Error; err != nil {
+			return err
+		}
+		// Payer (from_user) loses money — show as expense on their dashboard
+		fromTx := models.Transaction{
+			UserID: userID,
+			Type:   models.TransactionTypeExpense,
+			Name:   settlementName,
+			Amount: req.Amount,
+			Date:   date,
+		}
+		if err := tx.Create(&fromTx).Error; err != nil {
+			return err
+		}
+		// Recipient (to_user) gains money — show as reimbursement on their dashboard
+		toTx := models.Transaction{
+			UserID: req.ToUserID,
+			Type:   models.TransactionTypeReimbursement,
+			Name:   settlementName,
+			Amount: req.Amount,
+			Date:   date,
+		}
+		return tx.Create(&toTx).Error
+	})
+	if txErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not record settlement"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, settlementRecord{
+		ID:              s.ID,
+		FromUserID:      s.FromUserID,
+		FromDisplayName: nameMap[s.FromUserID],
+		ToUserID:        s.ToUserID,
+		ToDisplayName:   nameMap[s.ToUserID],
+		Amount:          s.Amount,
+		Date:            s.Date,
+	})
+}
+
 // GET /api/groups/:id/balances
 func (h *GroupHandler) GetBalances(c *gin.Context) {
 	userID := c.GetString("userID")
@@ -535,6 +674,9 @@ func (h *GroupHandler) GetBalances(c *gin.Context) {
 		h.db.Where("expense_id IN ?", expenseIDs).Find(&splits)
 	}
 
+	var pastSettlements []models.GroupSettlement
+	h.db.Where("group_id = ?", groupID).Order("date desc, created_at desc").Find(&pastSettlements)
+
 	// Build name map for all members
 	var memberIDs []string
 	h.db.Model(&models.GroupMember{}).Where("group_id = ?", groupID).Pluck("user_id", &memberIDs)
@@ -544,7 +686,7 @@ func (h *GroupHandler) GetBalances(c *gin.Context) {
 	}
 	nameMap := h.buildNameMap(memberIDSet)
 
-	// Compute net balances
+	// Compute net balances from expenses
 	net := map[string]float64{}
 	for _, id := range memberIDs {
 		net[id] = 0
@@ -554,6 +696,11 @@ func (h *GroupHandler) GetBalances(c *gin.Context) {
 	}
 	for _, s := range splits {
 		net[s.UserID] -= s.Amount
+	}
+	// Factor in past settlements
+	for _, s := range pastSettlements {
+		net[s.FromUserID] += s.Amount // debtor paid → their debt reduces
+		net[s.ToUserID] -= s.Amount   // creditor received → their credit reduces
 	}
 
 	netBalances := make([]memberBalance, 0, len(memberIDs))
@@ -569,14 +716,30 @@ func (h *GroupHandler) GetBalances(c *gin.Context) {
 		return netBalances[i].Balance > netBalances[j].Balance
 	})
 
-	settlements := computeSettlements(expenses, splits, nameMap)
-	if settlements == nil {
-		settlements = []settlement{}
+	suggested := computeSettlements(expenses, splits, nameMap)
+	// Re-run simplification on the settlement-adjusted net balances
+	suggested = computeSettlementsFromNet(net, nameMap)
+	if suggested == nil {
+		suggested = []settlement{}
+	}
+
+	history := make([]settlementRecord, len(pastSettlements))
+	for i, s := range pastSettlements {
+		history[i] = settlementRecord{
+			ID:              s.ID,
+			FromUserID:      s.FromUserID,
+			FromDisplayName: nameMap[s.FromUserID],
+			ToUserID:        s.ToUserID,
+			ToDisplayName:   nameMap[s.ToUserID],
+			Amount:          s.Amount,
+			Date:            s.Date,
+		}
 	}
 
 	c.JSON(http.StatusOK, balancesResponse{
 		NetBalances: netBalances,
-		Settlements: settlements,
+		Settlements: suggested,
+		History:     history,
 	})
 }
 

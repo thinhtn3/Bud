@@ -1,17 +1,109 @@
-import type { GroupBalances } from '../../types'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
+import { api } from '../../lib/api'
+import type { GroupBalances, SettlementRecord } from '../../types'
 import { splitStyles } from './splitStyles'
 
 interface Props {
   balances: GroupBalances
   currentUserId: string
+  groupId: string
+  onSettled: (record: SettlementRecord) => void
 }
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(n))
 }
 
-export default function BalancesPanel({ balances, currentUserId }: Props) {
-  const { net_balances, settlements } = balances
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+interface SettleModalProps {
+  toUserID: string
+  toDisplayName: string
+  defaultAmount: number
+  groupId: string
+  onSettled: (record: SettlementRecord) => void
+  onClose: () => void
+}
+
+function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, onSettled, onClose }: SettleModalProps) {
+  const [amount, setAmount] = useState(defaultAmount.toFixed(2))
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const record = await api.post<SettlementRecord>(`/api/groups/${groupId}/settlements`, {
+        to_user_id: toUserID,
+        amount: parseFloat(amount),
+      })
+      onSettled(record)
+    } catch {
+      setError('Could not record settlement. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return createPortal(
+    <>
+      <style>{splitStyles}</style>
+      <div className="split-modal-overlay" onClick={onClose}>
+        <div className="split-modal split-root" onClick={e => e.stopPropagation()}>
+          <div className="split-modal-title">Pay {toDisplayName}</div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="split-field">
+              <label className="split-label">Amount</label>
+              <input
+                className="split-input"
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+            {error && <div className="split-error">{error}</div>}
+            <div className="split-modal-footer">
+              <button type="button" className="split-btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="split-btn-primary" disabled={loading || !amount}>
+                {loading ? 'Recording…' : 'Confirm payment'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>,
+    document.body
+  )
+}
+
+export default function BalancesPanel({ balances, currentUserId, groupId, onSettled }: Props) {
+  const { net_balances, settlements, history } = balances
+  const [settling, setSettling] = useState<{ toUserID: string; toDisplayName: string; amount: number } | null>(null)
+  const [payingFullId, setPayingFullId] = useState<string | null>(null)
+
+  async function payInFull(toUserID: string, toDisplayName: string, amount: number) {
+    setPayingFullId(toUserID)
+    try {
+      const record = await api.post<SettlementRecord>(`/api/groups/${groupId}/settlements`, {
+        to_user_id: toUserID,
+        amount,
+      })
+      onSettled(record)
+    } catch {
+      // silently fail — user can try custom
+    } finally {
+      setPayingFullId(null)
+    }
+  }
 
   function balanceClass(b: number) {
     if (b > 0.005) return 'positive'
@@ -29,13 +121,12 @@ export default function BalancesPanel({ balances, currentUserId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <style>{splitStyles}</style>
 
+      {/* Net balances */}
       <div>
         <div className="split-section-header">Net balances</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {net_balances.length === 0 && (
-            <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.35)', padding: '12px 0' }}>
-              No expenses yet.
-            </div>
+            <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.35)', padding: '12px 0' }}>No expenses yet.</div>
           )}
           {net_balances.map(m => (
             <div key={m.user_id} className={`split-balance-row${m.user_id === currentUserId ? ' is-you' : ''}`}>
@@ -51,6 +142,7 @@ export default function BalancesPanel({ balances, currentUserId }: Props) {
         </div>
       </div>
 
+      {/* Suggested settlements */}
       <div>
         <div className="split-section-header">Suggested settlements</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -60,18 +152,82 @@ export default function BalancesPanel({ balances, currentUserId }: Props) {
             </div>
           )}
           {settlements.map((s, i) => {
-            const involvesYou = s.from_user_id === currentUserId || s.to_user_id === currentUserId
+            const isYou = s.from_user_id === currentUserId
             return (
-              <div key={i} className={`split-settlement-row${involvesYou ? ' involves-you' : ''}`}>
+              <div key={i} className={`split-settlement-row${isYou ? ' involves-you' : ''}`}>
                 <span className="split-settlement-from">{s.from_display_name || 'Unknown'}</span>
                 <span style={{ color: 'rgba(247,248,248,0.35)' }}>pays</span>
                 <span className="split-settlement-to">{s.to_display_name || 'Unknown'}</span>
                 <span className="split-settlement-amount">{fmt(s.amount)}</span>
+                {isYou && (
+                  <div style={{ display: 'flex', gap: 6, marginLeft: 4 }}>
+                    <button
+                      className="split-btn-primary"
+                      style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
+                      disabled={payingFullId === s.to_user_id}
+                      onClick={() => payInFull(s.to_user_id, s.to_display_name, s.amount)}
+                    >
+                      {payingFullId === s.to_user_id ? '…' : 'Pay in full'}
+                    </button>
+                    <button
+                      className="split-btn-secondary"
+                      style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
+                      onClick={() => setSettling({ toUserID: s.to_user_id, toDisplayName: s.to_display_name, amount: s.amount })}
+                    >
+                      Custom
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })}
         </div>
       </div>
+
+      {/* Settlement history */}
+      {history.length > 0 && (
+        <div>
+          <div className="split-section-header">Settlement history</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {history.map(h => (
+              <div key={h.id} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: 'rgba(247,248,248,0.02)',
+                border: '1px solid rgba(247,248,248,0.05)',
+                fontSize: 12,
+                color: 'rgba(247,248,248,0.5)',
+              }}>
+                <span style={{ fontWeight: 600, color: h.from_user_id === currentUserId ? '#ff6b6b' : 'rgba(247,248,248,0.7)' }}>
+                  {h.from_display_name}
+                </span>
+                <span>paid</span>
+                <span style={{ fontWeight: 600, color: h.to_user_id === currentUserId ? '#9fe870' : 'rgba(247,248,248,0.7)' }}>
+                  {h.to_display_name}
+                </span>
+                <span style={{ marginLeft: 'auto', fontWeight: 600, color: 'rgba(247,248,248,0.6)' }}>
+                  {fmt(h.amount)}
+                </span>
+                <span style={{ color: 'rgba(247,248,248,0.25)' }}>{formatDate(h.date)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {settling && (
+        <SettleModal
+          toUserID={settling.toUserID}
+          toDisplayName={settling.toDisplayName}
+          defaultAmount={settling.amount}
+          groupId={groupId}
+          onSettled={record => { onSettled(record); setSettling(null) }}
+          onClose={() => setSettling(null)}
+        />
+      )}
     </div>
   )
 }

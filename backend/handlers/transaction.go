@@ -178,8 +178,6 @@ type groupReimbursement struct {
 
 type transactionResponse struct {
 	models.Transaction
-	GroupPaidByID   *string              `json:"group_paid_by_id,omitempty"`
-	GroupPaidByName *string              `json:"group_paid_by_name,omitempty"`
 	GroupReimbursements []groupReimbursement `json:"group_reimbursements,omitempty"`
 }
 
@@ -217,56 +215,32 @@ func (h *TransactionHandler) List(c *gin.Context) {
 		}
 	}
 
-	paidByMap := map[string]struct{ id, name string }{}         // expenseID → payer info
-	reimbursementsMap := map[string][]groupReimbursement{}       // expenseID → who owes payer
-	payerExpenseIDs := []string{}
-
+	// Payer's group-linked transactions: enrich with who owes them (reimbursements).
+	// Since only the payer gets a group-linked personal transaction, all splits
+	// on that expense (except the payer's own) represent pending reimbursements.
+	reimbursementsMap := map[string][]groupReimbursement{}
 	if len(groupExpenseIDs) > 0 {
-		// Fetch payer info for each group expense
-		type expenseRow struct {
-			ID          string `gorm:"column:id"`
-			PaidBy      string `gorm:"column:paid_by"`
-			DisplayName string `gorm:"column:display_name"`
+		type splitRow struct {
+			ExpenseID   string  `gorm:"column:expense_id"`
+			UserID      string  `gorm:"column:user_id"`
+			DisplayName string  `gorm:"column:display_name"`
+			Amount      float64 `gorm:"column:amount"`
 		}
-		var expRows []expenseRow
+		var rows []splitRow
 		h.db.Raw(`
-			SELECT ge.id, ge.paid_by, p.display_name
-			FROM group_expenses ge
-			JOIN profiles p ON p.id = ge.paid_by
-			WHERE ge.id IN ?
-		`, groupExpenseIDs).Scan(&expRows)
+			SELECT s.expense_id, s.user_id, p.display_name, s.amount
+			FROM group_expense_splits s
+			JOIN profiles p ON p.id = s.user_id
+			WHERE s.expense_id IN ?
+			  AND s.user_id != ?
+		`, groupExpenseIDs, userID).Scan(&rows)
 
-		for _, r := range expRows {
-			paidByMap[r.ID] = struct{ id, name string }{r.PaidBy, r.DisplayName}
-			if r.PaidBy == userID {
-				payerExpenseIDs = append(payerExpenseIDs, r.ID)
-			}
-		}
-
-		// Reimbursements only apply when the current user is the payer
-		if len(payerExpenseIDs) > 0 {
-			type splitRow struct {
-				ExpenseID   string  `gorm:"column:expense_id"`
-				UserID      string  `gorm:"column:user_id"`
-				DisplayName string  `gorm:"column:display_name"`
-				Amount      float64 `gorm:"column:amount"`
-			}
-			var rows []splitRow
-			h.db.Raw(`
-				SELECT s.expense_id, s.user_id, p.display_name, s.amount
-				FROM group_expense_splits s
-				JOIN profiles p ON p.id = s.user_id
-				WHERE s.expense_id IN ?
-				  AND s.user_id != ?
-			`, payerExpenseIDs, userID).Scan(&rows)
-
-			for _, r := range rows {
-				reimbursementsMap[r.ExpenseID] = append(reimbursementsMap[r.ExpenseID], groupReimbursement{
-					UserID:      r.UserID,
-					DisplayName: r.DisplayName,
-					Amount:      r.Amount,
-				})
-			}
+		for _, r := range rows {
+			reimbursementsMap[r.ExpenseID] = append(reimbursementsMap[r.ExpenseID], groupReimbursement{
+				UserID:      r.UserID,
+				DisplayName: r.DisplayName,
+				Amount:      r.Amount,
+			})
 		}
 	}
 
@@ -274,10 +248,6 @@ func (h *TransactionHandler) List(c *gin.Context) {
 	for i, tx := range transactions {
 		resp := transactionResponse{Transaction: tx}
 		if tx.GroupExpenseID != nil {
-			if payer, ok := paidByMap[*tx.GroupExpenseID]; ok {
-				resp.GroupPaidByID = &payer.id
-				resp.GroupPaidByName = &payer.name
-			}
 			resp.GroupReimbursements = reimbursementsMap[*tx.GroupExpenseID]
 		}
 		result[i] = resp

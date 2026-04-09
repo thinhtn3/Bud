@@ -93,26 +93,16 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
                     {tx.description && (
                       <span className="bud-tx-note">{tx.description}</span>
                     )}
-                    {tx.group_expense_id && tx.group_my_share != null && (() => {
-                      const isPayer = tx.group_paid_by_id === user?.id
-                      if (isPayer) {
-                        return (
-                          <span className="bud-tx-note" style={{ color: 'rgba(247,248,248,0.45)' }}>
-                            Your share: ${tx.group_my_share.toFixed(2)}
-                            {tx.group_reimbursements && tx.group_reimbursements.length > 0 && (
-                              <> · Awaiting: {tx.group_reimbursements.map(r =>
-                                `${r.display_name} ($${r.amount.toFixed(2)})`
-                              ).join(', ')}</>
-                            )}
-                          </span>
-                        )
-                      }
-                      return (
-                        <span className="bud-tx-note" style={{ color: 'rgba(247,248,248,0.45)' }}>
-                          Owed to {tx.group_paid_by_name ?? 'group member'}
-                        </span>
-                      )
-                    })()}
+                    {tx.group_expense_id && tx.group_my_share != null && (
+                      <span className="bud-tx-note" style={{ color: 'rgba(247,248,248,0.45)' }}>
+                        Your share: ${tx.group_my_share.toFixed(2)}
+                        {tx.group_reimbursements && tx.group_reimbursements.length > 0 && (
+                          <> · Awaiting: {tx.group_reimbursements.map(r =>
+                            `${r.display_name} ($${r.amount.toFixed(2)})`
+                          ).join(', ')}</>
+                        )}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -120,8 +110,7 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
                     <span className={`bud-tx-amount ${tx.type}`}>
                       {tx.type === 'income' || tx.type === 'reimbursement' ? '+' : '−'}${tx.amount.toFixed(2)}
                     </span>
-                    {tx.group_expense_id && tx.group_paid_by_id === user?.id &&
-                      tx.group_my_share != null && tx.amount !== tx.group_my_share && (
+                    {tx.group_expense_id && tx.group_my_share != null && tx.amount !== tx.group_my_share && (
                       <div style={{ fontSize: 10, color: 'rgba(247,248,248,0.35)', marginTop: 1 }}>
                         net −${tx.group_my_share.toFixed(2)}
                       </div>
