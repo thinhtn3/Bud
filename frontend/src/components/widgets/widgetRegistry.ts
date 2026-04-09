@@ -1,4 +1,4 @@
-export type WidgetType = 'spending_summary' | 'recent_transactions' | 'add_transaction' | 'quick_add' | 'category_breakdown'
+export type WidgetType = 'spending_summary' | 'recent_transactions' | 'add_transaction' | 'quick_add' | 'category_breakdown' | 'card_spending'
 export type WidgetSize = 'small' | 'medium' | 'large'
 
 export interface WidgetDefinition {
@@ -42,6 +42,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     type: 'category_breakdown',
     label: 'Spending by Category',
     description: 'Bar chart of your expenses this month by category',
+    sizes: ['small', 'medium', 'large'],
+    defaultSize: 'medium',
+  },
+  {
+    type: 'card_spending',
+    label: 'Spending by Card',
+    description: 'Breakdown of your expenses by card alias this month',
     sizes: ['small', 'medium', 'large'],
     defaultSize: 'medium',
   },
