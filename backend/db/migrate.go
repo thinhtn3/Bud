@@ -22,6 +22,7 @@ func Migrate() {
 	log.Println("migration complete")
 
 	seedDefaultCategories()
+	addForeignKeys()
 }
 
 // seedDefaultCategories inserts system-level categories (user_id = NULL) once.
@@ -31,4 +32,48 @@ func seedDefaultCategories() {
 		DB.Where(models.Category{Name: name, UserID: nil}).FirstOrCreate(&models.Category{Name: name, UserID: nil})
 	}
 	log.Println("default categories seeded")
+}
+
+// addFKIfNotExists adds a foreign key constraint only if it does not already exist.
+// PostgreSQL does not support ADD CONSTRAINT IF NOT EXISTS, so we check pg_constraint first.
+func addFKIfNotExists(constraintName, table, alterSQL string) {
+	var count int64
+	err := DB.Raw(`
+		SELECT COUNT(1) FROM pg_constraint c
+		JOIN pg_class t ON t.oid = c.conrelid
+		WHERE c.conname = ? AND t.relname = ?
+	`, constraintName, table).Scan(&count).Error
+	if err != nil {
+		log.Fatalf("FK existence check failed for %s: %v", constraintName, err)
+	}
+	if count > 0 {
+		return
+	}
+	if err := DB.Exec(alterSQL).Error; err != nil {
+		log.Fatalf("failed to add FK %s: %v", constraintName, err)
+	}
+	log.Printf("FK %s added", constraintName)
+}
+
+// addForeignKeys adds all DB-level FK constraints. Safe to run on every startup.
+func addForeignKeys() {
+	addFKIfNotExists("fk_transactions_user_id", "transactions",
+		`ALTER TABLE transactions ADD CONSTRAINT fk_transactions_user_id
+		 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_categories_user_id", "categories",
+		`ALTER TABLE categories ADD CONSTRAINT fk_categories_user_id
+		 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_card_aliases_user_id", "card_aliases",
+		`ALTER TABLE card_aliases ADD CONSTRAINT fk_card_aliases_user_id
+		 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_widgets_user_id", "widgets",
+		`ALTER TABLE widgets ADD CONSTRAINT fk_widgets_user_id
+		 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_transactions_category_id", "transactions",
+		`ALTER TABLE transactions ADD CONSTRAINT fk_transactions_category_id
+		 FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL`)
+	addFKIfNotExists("fk_transactions_card_alias_id", "transactions",
+		`ALTER TABLE transactions ADD CONSTRAINT fk_transactions_card_alias_id
+		 FOREIGN KEY (card_alias_id) REFERENCES card_aliases(id) ON DELETE SET NULL`)
+	log.Println("foreign key constraints verified")
 }

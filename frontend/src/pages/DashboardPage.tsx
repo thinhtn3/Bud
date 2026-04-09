@@ -10,6 +10,7 @@ import { AddTransactionWidget } from '@/components/widgets/AddTransactionWidget'
 import { RecentTransactionsWidget } from '@/components/widgets/RecentTransactionsWidget'
 import { QuickAddWidget } from '@/components/widgets/QuickAddWidget'
 import { CategoryBreakdownWidget } from '@/components/widgets/CategoryBreakdownWidget'
+import { CardSpendingWidget } from '@/components/widgets/CardSpendingWidget'
 import { useDragReorder } from '@/components/widgets/useDragReorder'
 import { WIDGET_REGISTRY, type WidgetType, type WidgetSize, type WidgetInstance } from '@/components/widgets/widgetRegistry'
 import { parseLocalDate, formatMonthYear } from '@/lib/dateUtils'
@@ -199,7 +200,8 @@ export default function DashboardPage() {
           size={w.size}
           budgetAmount={user?.preferences?.budget_amount}
           budgetPeriod={user?.preferences?.budget_period}
-          isCurrentMonth={isCurrentMonth}
+          viewYear={viewYear}
+          viewMonth={viewMonth}
         />
       case 'recent_transactions':
         return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} onUpdate={handleUpdate} onDelete={handleDelete} />
@@ -209,6 +211,8 @@ export default function DashboardPage() {
         return <QuickAddWidget onAdd={handleAdd} size={w.size === 'small' ? 'small' : 'default'} />
       case 'category_breakdown':
         return <CategoryBreakdownWidget transactions={transactions} loading={loadingTx} size={w.size} />
+      case 'card_spending':
+        return <CardSpendingWidget transactions={transactions} loading={loadingTx} size={w.size} />
       default:
         return null
     }
