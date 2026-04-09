@@ -9,23 +9,24 @@ const PERIODS: { key: Period; label: string }[] = [
   { key: 'monthly',  label: 'Monthly' },
 ]
 
-// Biweekly = first half (1–15) or second half (16–end) based on today's date
-function getPeriodRange(period: Period): { start: Date; end: Date } {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth()
+// Biweekly = first half (1–15) or second half (16–end).
+// For the current month, splits based on today's date; for past months, defaults to second half.
+function getPeriodRange(period: Period, year: number, month: number): { start: Date; end: Date } {
   const lastDay = new Date(year, month + 1, 0).getDate()
 
   if (period === 'biweekly') {
-    return now.getDate() <= 15
+    const now = new Date()
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
+    const useFirstHalf = isCurrentMonth ? now.getDate() <= 15 : false
+    return useFirstHalf
       ? { start: new Date(year, month, 1),  end: new Date(year, month, 15) }
       : { start: new Date(year, month, 16), end: new Date(year, month, lastDay) }
   }
   return { start: new Date(year, month, 1), end: new Date(year, month, lastDay) }
 }
 
-function filterByPeriod(txs: Transaction[], period: Period): Transaction[] {
-  const { start, end } = getPeriodRange(period)
+function filterByPeriod(txs: Transaction[], period: Period, year: number, month: number): Transaction[] {
+  const { start, end } = getPeriodRange(period, year, month)
   return txs.filter(t => {
     const d = parseLocalDate(t.date)
     return d >= start && d <= end
@@ -41,24 +42,27 @@ function deriveBudget(amount: number, storedPeriod: string, viewPeriod: Period):
   return viewPeriod === 'biweekly' ? monthly / 2 : monthly
 }
 
-function periodLabel(period: Period): string {
+function periodLabel(period: Period, year: number, month: number): string {
   if (period === 'monthly') return 'this month'
+  const lastDay = new Date(year, month + 1, 0).getDate()
   const now = new Date()
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  return now.getDate() <= 15 ? '1–15' : `16–${lastDay}`
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
+  if (isCurrentMonth) return now.getDate() <= 15 ? '1–15' : `16–${lastDay}`
+  return `16–${lastDay}`
 }
 
 interface Props {
   transactions: Transaction[]       // selected month — used for stat cards
-  allTransactions: Transaction[]    // all time — used for period spending card
+  allTransactions: Transaction[]    // selected month — used for period spending card
   loading: boolean
   size?: 'small' | 'medium' | 'large'
   budgetAmount?: number
   budgetPeriod?: string
-  isCurrentMonth?: boolean
+  viewYear: number
+  viewMonth: number
 }
 
-export function SpendingSummaryWidget({ transactions, allTransactions, loading, size = 'large', budgetAmount, budgetPeriod, isCurrentMonth = true }: Props) {
+export function SpendingSummaryWidget({ transactions, allTransactions, loading, size = 'large', budgetAmount, budgetPeriod, viewYear, viewMonth }: Props) {
   const [period, setPeriod] = useState<Period>('biweekly')
 
   const totalIncome         = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
@@ -67,7 +71,7 @@ export function SpendingSummaryWidget({ transactions, allTransactions, loading, 
   const netExpenses         = totalExpenses - totalReimbursements
   const net                 = totalIncome + totalReimbursements - totalExpenses
 
-  const periodTxs            = filterByPeriod(allTransactions, period)
+  const periodTxs            = filterByPeriod(allTransactions, period, viewYear, viewMonth)
   const periodExpenses       = periodTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
   const periodReimbursements = periodTxs.filter(t => t.type === 'reimbursement').reduce((s, t) => s + t.amount, 0)
   const netPeriodExpenses    = periodExpenses - periodReimbursements
@@ -95,7 +99,7 @@ export function SpendingSummaryWidget({ transactions, allTransactions, loading, 
   if (loading) {
     return (
       <div className={rowClass}>
-        {Array.from({ length: isCurrentMonth ? 4 : 3 }).map((_, i) => (
+        {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="bud-stat-card bud-stat-skeleton" />
         ))}
       </div>
@@ -154,8 +158,8 @@ export function SpendingSummaryWidget({ transactions, allTransactions, loading, 
         </div>
       </div>
 
-      {/* Period Spending — only meaningful for current month */}
-      {isCurrentMonth && <div className="bud-stat-card bud-stat-count">
+      {/* Period Spending */}
+      <div className="bud-stat-card bud-stat-count">
         <div className="bud-stat-top">
           <span className="bud-stat-label">Net Spending</span>
           <span className="bud-stat-icon bud-stat-icon-count">
@@ -188,13 +192,13 @@ export function SpendingSummaryWidget({ transactions, allTransactions, loading, 
               />
             </div>
             <p className="bud-stat-sub">
-              {overBudget ? 'over budget · ' : ''}of ${fmt(periodBudget)} · {periodCount} expense{periodCount !== 1 ? 's' : ''} · {periodLabel(period)}
+              {overBudget ? 'over budget · ' : ''}of ${fmt(periodBudget)} · {periodCount} expense{periodCount !== 1 ? 's' : ''} · {periodLabel(period, viewYear, viewMonth)}
             </p>
           </>
         ) : (
-          <p className="bud-stat-sub">{periodCount} expense{periodCount !== 1 ? 's' : ''} · {periodLabel(period)}</p>
+          <p className="bud-stat-sub">{periodCount} expense{periodCount !== 1 ? 's' : ''} · {periodLabel(period, viewYear, viewMonth)}</p>
         )}
-      </div>}
+      </div>
 
     </div>
   )
