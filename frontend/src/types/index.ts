@@ -1,3 +1,9 @@
+export interface GroupReimbursement {
+  user_id: string
+  display_name: string
+  amount: number
+}
+
 export interface Transaction {
   id: string
   type: 'expense' | 'income' | 'reimbursement'
@@ -7,6 +13,9 @@ export interface Transaction {
   date: string
   category_id: string | null
   card_alias_id: string | null
+  group_expense_id: string | null
+  group_my_share: number | null
+  group_reimbursements?: GroupReimbursement[]
 }
 
 export interface Group {

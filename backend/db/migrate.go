@@ -79,6 +79,9 @@ func addForeignKeys() {
 	addFKIfNotExists("fk_transactions_card_alias_id", "transactions",
 		`ALTER TABLE transactions ADD CONSTRAINT fk_transactions_card_alias_id
 		 FOREIGN KEY (card_alias_id) REFERENCES card_aliases(id) ON DELETE SET NULL`)
+	addFKIfNotExists("fk_transactions_group_expense_id", "transactions",
+		`ALTER TABLE transactions ADD CONSTRAINT fk_transactions_group_expense_id
+		 FOREIGN KEY (group_expense_id) REFERENCES group_expenses(id) ON DELETE CASCADE`)
 	// Group FKs
 	addFKIfNotExists("fk_groups_created_by", "groups",
 		`ALTER TABLE groups ADD CONSTRAINT fk_groups_created_by

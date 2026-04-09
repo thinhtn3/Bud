@@ -69,7 +69,22 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
                     )
                   })()}
                   <div className="bud-tx-meta">
-                    <span className="bud-tx-name">{tx.name}</span>
+                    <span className="bud-tx-name">
+                      {tx.name}
+                      {tx.group_expense_id && (
+                        <span style={{
+                          marginLeft: 6,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: '1px 5px',
+                          borderRadius: 4,
+                          background: 'rgba(159,232,112,0.12)',
+                          color: '#9fe870',
+                          verticalAlign: 'middle',
+                          letterSpacing: '0.04em',
+                        }}>GROUP</span>
+                      )}
+                    </span>
                     {(getCategoryMeta(tx.category_id) || tx.description) && (
                       <span className="bud-tx-date">
                         {getCategoryMeta(tx.category_id)?.name}
@@ -78,12 +93,29 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
                     {tx.description && (
                       <span className="bud-tx-note">{tx.description}</span>
                     )}
+                    {tx.group_expense_id && tx.group_my_share != null && (
+                      <span className="bud-tx-note" style={{ color: 'rgba(247,248,248,0.45)' }}>
+                        Your share: ${tx.group_my_share.toFixed(2)}
+                        {tx.group_reimbursements && tx.group_reimbursements.length > 0 && (
+                          <> · Awaiting: {tx.group_reimbursements.map(r =>
+                            `${r.display_name} ($${r.amount.toFixed(2)})`
+                          ).join(', ')}</>
+                        )}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className={`bud-tx-amount ${tx.type}`}>
-                    {tx.type === 'income' || tx.type === 'reimbursement' ? '+' : '−'}${tx.amount.toFixed(2)}
-                  </span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span className={`bud-tx-amount ${tx.type}`}>
+                      {tx.type === 'income' || tx.type === 'reimbursement' ? '+' : '−'}${tx.amount.toFixed(2)}
+                    </span>
+                    {tx.group_expense_id && tx.group_my_share != null && tx.amount !== tx.group_my_share && (
+                      <div style={{ fontSize: 10, color: 'rgba(247,248,248,0.35)', marginTop: 1 }}>
+                        net −${tx.group_my_share.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
                   <span className="bud-tx-edit-hint">✎</span>
                 </div>
               </li>

@@ -361,6 +361,15 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 		return
 	}
 
+	// Find the payer's own share (used for personal transaction's group_my_share)
+	var payerShare float64
+	for _, s := range req.Splits {
+		if s.UserID == req.PaidBy {
+			payerShare = s.Amount
+			break
+		}
+	}
+
 	var expense models.GroupExpense
 	txErr := h.db.Transaction(func(tx *gorm.DB) error {
 		expense = models.GroupExpense{
@@ -384,7 +393,19 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 				return err
 			}
 		}
-		return nil
+		// Auto-create a personal transaction for the payer so it appears
+		// on their dashboard showing the full fronted amount and their actual share.
+		personalTx := models.Transaction{
+			UserID:         req.PaidBy,
+			Type:           models.TransactionTypeExpense,
+			Name:           req.Name,
+			Amount:         req.Amount,
+			Date:           date,
+			Description:    req.Description,
+			GroupExpenseID: &expense.ID,
+			GroupMyShare:   &payerShare,
+		}
+		return tx.Create(&personalTx).Error
 	})
 	if txErr != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create expense"})

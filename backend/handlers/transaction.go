@@ -170,6 +170,17 @@ func (h *TransactionHandler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+type groupReimbursement struct {
+	UserID      string  `json:"user_id"`
+	DisplayName string  `json:"display_name"`
+	Amount      float64 `json:"amount"`
+}
+
+type transactionResponse struct {
+	models.Transaction
+	GroupReimbursements []groupReimbursement `json:"group_reimbursements,omitempty"`
+}
+
 // GET /api/transactions
 // Optional query params: type, category_id, from (YYYY-MM-DD), to (YYYY-MM-DD)
 func (h *TransactionHandler) List(c *gin.Context) {
@@ -196,5 +207,49 @@ func (h *TransactionHandler) List(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, transactions)
+	// Collect group_expense_ids that belong to this user (they are the payer)
+	var groupExpenseIDs []string
+	for _, tx := range transactions {
+		if tx.GroupExpenseID != nil {
+			groupExpenseIDs = append(groupExpenseIDs, *tx.GroupExpenseID)
+		}
+	}
+
+	// For group-linked transactions, fetch the other members' splits (reimbursements owed to payer)
+	reimbursementsMap := map[string][]groupReimbursement{}
+	if len(groupExpenseIDs) > 0 {
+		type splitRow struct {
+			ExpenseID   string  `gorm:"column:expense_id"`
+			UserID      string  `gorm:"column:user_id"`
+			DisplayName string  `gorm:"column:display_name"`
+			Amount      float64 `gorm:"column:amount"`
+		}
+		var rows []splitRow
+		h.db.Raw(`
+			SELECT s.expense_id, s.user_id, p.display_name, s.amount
+			FROM group_expense_splits s
+			JOIN profiles p ON p.id = s.user_id
+			WHERE s.expense_id IN ?
+			  AND s.user_id != ?
+		`, groupExpenseIDs, userID).Scan(&rows)
+
+		for _, r := range rows {
+			reimbursementsMap[r.ExpenseID] = append(reimbursementsMap[r.ExpenseID], groupReimbursement{
+				UserID:      r.UserID,
+				DisplayName: r.DisplayName,
+				Amount:      r.Amount,
+			})
+		}
+	}
+
+	result := make([]transactionResponse, len(transactions))
+	for i, tx := range transactions {
+		resp := transactionResponse{Transaction: tx}
+		if tx.GroupExpenseID != nil {
+			resp.GroupReimbursements = reimbursementsMap[*tx.GroupExpenseID]
+		}
+		result[i] = resp
+	}
+
+	c.JSON(http.StatusOK, result)
 }
