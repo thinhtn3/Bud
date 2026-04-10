@@ -27,6 +27,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 	preferencesHandler := handlers.NewPreferencesHandler(db.DB)
 	categoryHandler := handlers.NewCategoryHandler(db.DB)
 	cardAliasHandler := handlers.NewCardAliasHandler(db.DB)
+	groupHandler := handlers.NewGroupHandler(db.DB)
 
 	// Auth routes — no JWT middleware
 	auth := r.Group("/api/auth")
@@ -45,12 +46,24 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		api.GET("/dashboard/widgets", widgetHandler.List)
 		api.PUT("/dashboard/widgets", widgetHandler.Save)
 
+		api.GET("/categories", categoryHandler.ListSystem)
 		api.POST("/categories", categoryHandler.Create)
 
 		api.GET("/cards", cardAliasHandler.List)
 		api.POST("/cards", cardAliasHandler.Create)
 		api.PUT("/cards/:id", cardAliasHandler.Update)
 		api.DELETE("/cards/:id", cardAliasHandler.Delete)
+
+		api.GET("/groups", groupHandler.ListGroups)
+		api.POST("/groups", groupHandler.CreateGroup)
+		api.POST("/groups/join", groupHandler.JoinGroup)
+		api.GET("/groups/:id", groupHandler.GetGroup)
+		api.POST("/groups/:id/expenses", groupHandler.CreateExpense)
+		api.GET("/groups/:id/expenses", groupHandler.ListExpenses)
+		api.DELETE("/groups/:id/expenses/:expenseId", groupHandler.DeleteExpense)
+		api.GET("/groups/:id/balances", groupHandler.GetBalances)
+		api.POST("/groups/:id/settlements", groupHandler.CreateSettlement)
+		api.DELETE("/groups/:id/settlements/:settlementId", groupHandler.DeleteSettlement)
 
 		api.GET("/transactions/quick-add", transactionHandler.QuickAdd)
 		api.GET("/transactions", transactionHandler.List)

@@ -5,6 +5,8 @@ import OnboardingRoute from '@/components/OnboardingRoute'
 import AuthPage from '@/pages/AuthPage'
 import DashboardPage from '@/pages/DashboardPage'
 import OnboardingPage from '@/pages/OnboardingPage'
+import GroupsPage from '@/pages/GroupsPage'
+import GroupPage from '@/pages/GroupPage'
 
 export default function App() {
   return (
@@ -26,6 +28,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/group"
+            element={
+              <ProtectedRoute>
+                <GroupsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/group/:groupId"
+            element={
+              <ProtectedRoute>
+                <GroupPage />
               </ProtectedRoute>
             }
           />

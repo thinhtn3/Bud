@@ -81,7 +81,7 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
 
   function renderChip(tx: Transaction) {
     const categoryName = user?.categories?.find(c => c.id === tx.category_id)?.name ?? null
-    const Icon = categoryName ? getCategoryIcon(categoryName) : <TagIcon size={14} />
+    const Icon = categoryName ? getCategoryIcon(categoryName) : TagIcon
 
     return (
       <button
