@@ -50,6 +50,7 @@ export interface GroupExpense {
   paid_by: string
   paid_by_name: string
   category_id: string | null
+  category_name: string | null
   name: string
   amount: number
   date: string

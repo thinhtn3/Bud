@@ -747,7 +747,6 @@ export const groupStyles = `
     border: 1px solid rgba(247,248,248,0.08);
     border-radius: 16px;
     padding: 16px 18px;
-    margin-bottom: 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -887,4 +886,219 @@ export const groupStyles = `
   }
   .gss-settle-btn:hover { opacity: 0.85; }
   .gss-settle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ── Group Expense Card (ge-*) ────────────────────────────── */
+  .ge-card {
+    background: rgba(247,248,248,0.03);
+    border: 1px solid rgba(247,248,248,0.07);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ge-card:hover {
+    background: rgba(247,248,248,0.05);
+    border-color: rgba(247,248,248,0.1);
+  }
+
+  .ge-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 14px 16px;
+  }
+
+  .ge-icon {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(247,248,248,0.07);
+    border: 1px solid rgba(247,248,248,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(247,248,248,0.4);
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  .ge-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ge-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f7f8f8;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ge-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 1px;
+  }
+
+  .ge-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(247,248,248,0.05);
+    border: 1px solid rgba(247,248,248,0.08);
+    border-radius: 6px;
+    padding: 2px 7px 2px 5px;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(247,248,248,0.45);
+  }
+
+  .ge-chip-cat {
+    color: rgba(247,248,248,0.5);
+    background: rgba(247,248,248,0.06);
+    border-color: rgba(247,248,248,0.1);
+  }
+
+  .ge-payer-avatar {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: rgba(247,248,248,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7.5px;
+    font-weight: 700;
+    color: rgba(247,248,248,0.6);
+    flex-shrink: 0;
+  }
+
+  .ge-note {
+    font-size: 11.5px;
+    color: rgba(247,248,248,0.33);
+    font-style: italic;
+  }
+
+  .ge-right {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 7px;
+  }
+
+  .ge-amount {
+    font-size: 16px;
+    font-weight: 700;
+    color: #f7f8f8;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  .ge-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .ge-splits-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(247,248,248,0.05);
+    border: 1px solid rgba(247,248,248,0.09);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(247,248,248,0.4);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .ge-splits-btn:hover, .ge-splits-btn.active {
+    color: rgba(247,248,248,0.8);
+    border-color: rgba(247,248,248,0.16);
+    background: rgba(247,248,248,0.09);
+  }
+
+  .ge-delete-btn {
+    width: 27px;
+    height: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: rgba(247,248,248,0.22);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    font-size: 11px;
+  }
+  .ge-delete-btn:hover {
+    color: #ff6b6b;
+    border-color: rgba(255,107,107,0.2);
+    background: rgba(255,107,107,0.06);
+  }
+  .ge-delete-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .ge-splits-panel {
+    border-top: 1px solid rgba(247,248,248,0.05);
+    padding: 10px 16px 12px 67px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    background: rgba(0,0,0,0.12);
+  }
+
+  .ge-split-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ge-split-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(247,248,248,0.07);
+    border: 1px solid rgba(247,248,248,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(247,248,248,0.5);
+    flex-shrink: 0;
+  }
+
+  .ge-split-name {
+    flex: 1;
+    font-size: 12.5px;
+    color: rgba(247,248,248,0.6);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ge-split-amount {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgba(247,248,248,0.65);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    flex-shrink: 0;
+  }
 `

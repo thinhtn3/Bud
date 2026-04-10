@@ -70,8 +70,9 @@ type splitDetail struct {
 
 type expenseDetail struct {
 	models.GroupExpense
-	PaidByName string        `json:"paid_by_name"`
-	Splits     []splitDetail `json:"splits"`
+	PaidByName   string        `json:"paid_by_name"`
+	CategoryName *string       `json:"category_name"`
+	Splits       []splitDetail `json:"splits"`
 }
 
 type memberBalance struct {
@@ -547,6 +548,26 @@ func (h *GroupHandler) ListExpenses(c *gin.Context) {
 	}
 	nameMap := h.buildNameMap(allUserIDs)
 
+	// Build category name map for any categories referenced by these expenses
+	catIDs := []string{}
+	for _, e := range expenses {
+		if e.CategoryID != nil {
+			catIDs = append(catIDs, *e.CategoryID)
+		}
+	}
+	catNameMap := map[string]string{}
+	if len(catIDs) > 0 {
+		type catRow struct {
+			ID   string `gorm:"column:id"`
+			Name string `gorm:"column:name"`
+		}
+		var cats []catRow
+		h.db.Raw("SELECT id, name FROM categories WHERE id IN ?", catIDs).Scan(&cats)
+		for _, c := range cats {
+			catNameMap[c.ID] = c.Name
+		}
+	}
+
 	// Group splits by expense ID
 	splitsByExpense := map[string][]models.GroupExpenseSplit{}
 	for _, s := range splits {
@@ -563,9 +584,16 @@ func (h *GroupHandler) ListExpenses(c *gin.Context) {
 				Amount:      s.Amount,
 			})
 		}
+		var catName *string
+		if e.CategoryID != nil {
+			if n, ok := catNameMap[*e.CategoryID]; ok {
+				catName = &n
+			}
+		}
 		result[i] = expenseDetail{
 			GroupExpense: e,
 			PaidByName:   nameMap[e.PaidBy],
+			CategoryName: catName,
 			Splits:       details,
 		}
 	}
