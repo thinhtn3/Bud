@@ -179,6 +179,7 @@ type groupReimbursement struct {
 type transactionResponse struct {
 	models.Transaction
 	GroupReimbursements []groupReimbursement `json:"group_reimbursements,omitempty"`
+	GroupName           *string              `json:"group_name,omitempty"`
 }
 
 // GET /api/transactions
@@ -244,11 +245,33 @@ func (h *TransactionHandler) List(c *gin.Context) {
 		}
 	}
 
+	// Fetch group names for group-linked transactions (single query, not N+1).
+	groupNameMap := map[string]string{}
+	if len(groupExpenseIDs) > 0 {
+		type nameRow struct {
+			ExpenseID string `gorm:"column:expense_id"`
+			GroupName string `gorm:"column:group_name"`
+		}
+		var nameRows []nameRow
+		h.db.Raw(`
+			SELECT ge.id AS expense_id, g.name AS group_name
+			FROM group_expenses ge
+			JOIN groups g ON g.id = ge.group_id
+			WHERE ge.id IN ?
+		`, groupExpenseIDs).Scan(&nameRows)
+		for _, r := range nameRows {
+			groupNameMap[r.ExpenseID] = r.GroupName
+		}
+	}
+
 	result := make([]transactionResponse, len(transactions))
 	for i, tx := range transactions {
 		resp := transactionResponse{Transaction: tx}
 		if tx.GroupExpenseID != nil {
 			resp.GroupReimbursements = reimbursementsMap[*tx.GroupExpenseID]
+			if name, ok := groupNameMap[*tx.GroupExpenseID]; ok {
+				resp.GroupName = &name
+			}
 		}
 		result[i] = resp
 	}

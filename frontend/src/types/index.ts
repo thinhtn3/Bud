@@ -15,6 +15,7 @@ export interface Transaction {
   card_alias_id: string | null
   group_expense_id: string | null
   group_my_share: number | null
+  group_name?: string | null
   group_reimbursements?: GroupReimbursement[]
 }
 
