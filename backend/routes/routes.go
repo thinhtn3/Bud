@@ -46,6 +46,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		api.GET("/dashboard/widgets", widgetHandler.List)
 		api.PUT("/dashboard/widgets", widgetHandler.Save)
 
+		api.GET("/categories", categoryHandler.ListSystem)
 		api.POST("/categories", categoryHandler.Create)
 
 		api.GET("/cards", cardAliasHandler.List)

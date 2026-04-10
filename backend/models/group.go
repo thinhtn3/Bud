@@ -24,6 +24,7 @@ type GroupExpense struct {
 	ID          string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	GroupID     string    `gorm:"type:uuid;not null;index" json:"group_id"`
 	PaidBy      string    `gorm:"type:uuid;not null" json:"paid_by"`
+	CategoryID  *string   `gorm:"type:uuid" json:"category_id"`
 	Name        string    `gorm:"not null" json:"name"`
 	Amount      float64   `gorm:"type:decimal(12,2);not null" json:"amount"`
 	Date        time.Time `gorm:"type:date;not null" json:"date"`

@@ -36,11 +36,12 @@ type splitInput struct {
 }
 
 type createExpenseRequest struct {
-	Name        string      `json:"name" binding:"required"`
-	Amount      float64     `json:"amount" binding:"required,gt=0"`
-	Date        string      `json:"date" binding:"required"`
-	PaidBy      string      `json:"paid_by" binding:"required"`
-	Description *string     `json:"description"`
+	Name        string       `json:"name" binding:"required"`
+	Amount      float64      `json:"amount" binding:"required,gt=0"`
+	Date        string       `json:"date" binding:"required"`
+	PaidBy      string       `json:"paid_by" binding:"required"`
+	CategoryID  *string      `json:"category_id"`
+	Description *string      `json:"description"`
 	Splits      []splitInput `json:"splits" binding:"required,min=1"`
 }
 
@@ -421,6 +422,7 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 		expense = models.GroupExpense{
 			GroupID:     groupID,
 			PaidBy:      req.PaidBy,
+			CategoryID:  req.CategoryID,
 			Name:        req.Name,
 			Amount:      req.Amount,
 			Date:        date,
@@ -455,6 +457,7 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 			Name:           req.Name,
 			Amount:         req.Amount,
 			Date:           date,
+			CategoryID:     req.CategoryID,
 			Description:    req.Description,
 			GroupExpenseID: &expense.ID,
 			GroupMyShare:   &payerShare,

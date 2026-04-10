@@ -4,6 +4,11 @@ import { api } from '../../lib/api'
 import type { GroupMember, GroupExpense } from '../../types'
 import { groupStyles } from './groupStyles'
 
+interface Category {
+  id: string
+  name: string
+}
+
 interface SplitRow {
   user_id: string
   display_name: string
@@ -37,10 +42,18 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(today())
   const [paidBy, setPaidBy] = useState(currentUserId)
+  const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [splits, setSplits] = useState<SplitRow[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Fetch system categories once on first open
+  useEffect(() => {
+    if (!open || categories.length > 0) return
+    api.get<Category[]>('/api/categories').then(setCategories).catch(() => {})
+  }, [open])
 
   // Init splits whenever members or amount changes
   useEffect(() => {
@@ -81,10 +94,11 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
         amount: expenseAmt,
         date,
         paid_by: paidBy,
+        category_id: categoryId || null,
         description: description.trim() || null,
         splits: splits.map(s => ({ user_id: s.user_id, amount: parseFloat(s.amount) || 0 })),
       })
-      setName(''); setAmount(''); setDate(today()); setDescription('')
+      setName(''); setAmount(''); setDate(today()); setCategoryId(''); setDescription('')
       onAdded(expense)
     } catch {
       setError('Could not add expense. Please try again.')
@@ -123,15 +137,26 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
               </div>
             </div>
 
-            <div className="group-field">
-              <label className="group-label">Paid by</label>
-              <select className="group-select" value={paidBy} onChange={e => setPaidBy(e.target.value)}>
-                {members.map(m => (
-                  <option key={m.user_id} value={m.user_id}>
-                    {m.display_name}{m.user_id === currentUserId ? ' (You)' : ''}
-                  </option>
-                ))}
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="group-field">
+                <label className="group-label">Paid by</label>
+                <select className="group-select" value={paidBy} onChange={e => setPaidBy(e.target.value)}>
+                  {members.map(m => (
+                    <option key={m.user_id} value={m.user_id}>
+                      {m.display_name}{m.user_id === currentUserId ? ' (You)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="group-field">
+                <label className="group-label">Category</label>
+                <select className="group-select" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+                  <option value="">— None —</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="group-field">
