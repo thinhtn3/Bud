@@ -4,6 +4,7 @@ import type { GroupDetail as GroupDetailType, GroupExpense, GroupBalances, Settl
 import { groupStyles } from './groupStyles'
 import AddExpenseModal from './AddExpenseModal'
 import BalancesPanel from './BalancesPanel'
+import SettlementSummary from './SettlementSummary'
 
 interface Props {
   groupId: string
@@ -120,6 +121,15 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
           <button className="group-btn-primary" onClick={() => setAddOpen(true)}>+ Add expense</button>
         )}
       </div>
+
+      {balances && (
+        <SettlementSummary
+          settlements={balances.settlements}
+          currentUserId={currentUserId}
+          groupId={groupId}
+          onSettled={handleSettled}
+        />
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div className="group-tab-bar">

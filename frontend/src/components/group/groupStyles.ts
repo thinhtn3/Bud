@@ -740,4 +740,151 @@ export const groupStyles = `
     background: rgba(247,248,248,0.04);
     animation: gl-skeleton-pulse 1.5s ease-in-out infinite;
   }
+
+  /* ── Settlement Summary (gss-*) ───────────────────────────── */
+  .gss-card {
+    background: rgba(247,248,248,0.025);
+    border: 1px solid rgba(247,248,248,0.08);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .gss-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .gss-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(247,248,248,0.3);
+  }
+  .gss-count {
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(247,248,248,0.08);
+    color: rgba(247,248,248,0.4);
+    border-radius: 20px;
+    padding: 1px 7px;
+  }
+  .gss-you-owe-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,107,107,0.8);
+    background: rgba(255,107,107,0.08);
+    border: 1px solid rgba(255,107,107,0.15);
+    border-radius: 20px;
+    padding: 2px 9px;
+  }
+
+  .gss-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .gss-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(247,248,248,0.02);
+    border: 1px solid rgba(247,248,248,0.05);
+    transition: background 0.15s;
+  }
+  .gss-row.you-owe {
+    background: rgba(255,107,107,0.04);
+    border-color: rgba(255,107,107,0.14);
+  }
+  .gss-row.owed-to-you {
+    background: rgba(159,232,112,0.03);
+    border-color: rgba(159,232,112,0.1);
+  }
+
+  .gss-party {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+  }
+  .gss-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(247,248,248,0.07);
+    border: 1px solid rgba(247,248,248,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(247,248,248,0.5);
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+  }
+  .gss-avatar.you {
+    background: rgba(159,232,112,0.1);
+    border-color: rgba(159,232,112,0.2);
+    color: #9fe870;
+    font-size: 8px;
+  }
+  .gss-row.you-owe .gss-avatar:first-child {
+    background: rgba(255,107,107,0.1);
+    border-color: rgba(255,107,107,0.2);
+    color: #ff6b6b;
+  }
+  .gss-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(247,248,248,0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+  }
+  .gss-row.you-owe .gss-party:first-child .gss-name { color: #ff6b6b; }
+  .gss-row.owed-to-you .gss-party:last-of-type .gss-name { color: #9fe870; }
+
+  .gss-arrow {
+    color: rgba(247,248,248,0.2);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+  .gss-row.you-owe .gss-arrow { color: rgba(255,107,107,0.4); }
+
+  .gss-amount {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(247,248,248,0.6);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    flex-shrink: 0;
+  }
+  .gss-row.you-owe .gss-amount { color: #ff6b6b; }
+  .gss-row.owed-to-you .gss-amount { color: #9fe870; }
+
+  .gss-settle-btn {
+    flex-shrink: 0;
+    background: #9fe870;
+    color: #0a0b0c;
+    border: none;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    margin-left: 6px;
+  }
+  .gss-settle-btn:hover { opacity: 0.85; }
+  .gss-settle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 `
