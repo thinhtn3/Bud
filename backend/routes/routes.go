@@ -62,6 +62,7 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		api.DELETE("/groups/:id/expenses/:expenseId", groupHandler.DeleteExpense)
 		api.GET("/groups/:id/balances", groupHandler.GetBalances)
 		api.POST("/groups/:id/settlements", groupHandler.CreateSettlement)
+		api.DELETE("/groups/:id/settlements/:settlementId", groupHandler.DeleteSettlement)
 
 		api.GET("/transactions/quick-add", transactionHandler.QuickAdd)
 		api.GET("/transactions", transactionHandler.List)

@@ -9,6 +9,7 @@ interface Props {
   currentUserId: string
   groupId: string
   onSettled: (record: SettlementRecord) => void
+  onSettlementDeleted: (id: string) => void
 }
 
 function fmt(n: number) {
@@ -85,10 +86,90 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, onSettle
   )
 }
 
-export default function BalancesPanel({ balances, currentUserId, groupId, onSettled }: Props) {
+interface DeleteSettlementModalProps {
+  settlement: SettlementRecord
+  groupId: string
+  onDeleted: (id: string) => void
+  onClose: () => void
+}
+
+function DeleteSettlementModal({ settlement, groupId, onDeleted, onClose }: DeleteSettlementModalProps) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleDelete(deleteTransactions: boolean) {
+    setError('')
+    setLoading(true)
+    try {
+      const url = `/api/groups/${groupId}/settlements/${settlement.id}${deleteTransactions ? '?delete_transactions=true' : ''}`
+      await api.delete(url)
+      onDeleted(settlement.id)
+    } catch {
+      setError('Could not delete settlement. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  return createPortal(
+    <>
+      <style>{splitStyles}</style>
+      <div className="split-modal-overlay" onClick={onClose}>
+        <div className="split-modal split-root" onClick={e => e.stopPropagation()}>
+          <div className="split-modal-title">Delete settlement?</div>
+          <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.6)', lineHeight: 1.5 }}>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ fontWeight: 600, color: 'rgba(247,248,248,0.85)' }}>{settlement.from_display_name}</span>
+              {' paid '}
+              <span style={{ fontWeight: 600, color: 'rgba(247,248,248,0.85)' }}>{settlement.to_display_name}</span>
+              {' · '}
+              <span style={{ fontWeight: 600, color: 'rgba(247,248,248,0.85)' }}>{fmt(settlement.amount)}</span>
+              {' · '}
+              {formatDate(settlement.date)}
+            </div>
+            <div>Do you also want to remove the related transaction from your personal dashboard?</div>
+          </div>
+          {error && <div className="split-error" style={{ marginTop: 8 }}>{error}</div>}
+          <div className="split-modal-footer" style={{ flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+              <button
+                className="split-btn-danger"
+                style={{ flex: 1 }}
+                disabled={loading}
+                onClick={() => handleDelete(true)}
+              >
+                {loading ? '…' : 'Remove from dashboard'}
+              </button>
+              <button
+                className="split-btn-secondary"
+                style={{ flex: 1 }}
+                disabled={loading}
+                onClick={() => handleDelete(false)}
+              >
+                Keep in my dashboard
+              </button>
+            </div>
+            <button
+              type="button"
+              className="split-btn-ghost"
+              style={{ width: '100%' }}
+              disabled={loading}
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </>,
+    document.body
+  )
+}
+
+export default function BalancesPanel({ balances, currentUserId, groupId, onSettled, onSettlementDeleted }: Props) {
   const { net_balances, settlements, history } = balances
   const [settling, setSettling] = useState<{ toUserID: string; toDisplayName: string; amount: number } | null>(null)
   const [payingFullId, setPayingFullId] = useState<string | null>(null)
+  const [deletingSettlement, setDeletingSettlement] = useState<SettlementRecord | null>(null)
 
   async function payInFull(toUserID: string, toDisplayName: string, amount: number) {
     setPayingFullId(toUserID)
@@ -212,6 +293,15 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
                   {fmt(h.amount)}
                 </span>
                 <span style={{ color: 'rgba(247,248,248,0.25)' }}>{formatDate(h.date)}</span>
+                {h.from_user_id === currentUserId && (
+                  <button
+                    className="split-btn-danger"
+                    style={{ fontSize: 11, padding: '3px 10px' }}
+                    onClick={() => setDeletingSettlement(h)}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -226,6 +316,15 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
           groupId={groupId}
           onSettled={record => { onSettled(record); setSettling(null) }}
           onClose={() => setSettling(null)}
+        />
+      )}
+
+      {deletingSettlement && (
+        <DeleteSettlementModal
+          settlement={deletingSettlement}
+          groupId={groupId}
+          onDeleted={id => { onSettlementDeleted(id); setDeletingSettlement(null) }}
+          onClose={() => setDeletingSettlement(null)}
         />
       )}
     </div>

@@ -618,22 +618,24 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		}
 		// Payer (from_user) loses money — show as expense on their dashboard
 		fromTx := models.Transaction{
-			UserID: userID,
-			Type:   models.TransactionTypeExpense,
-			Name:   settlementName,
-			Amount: req.Amount,
-			Date:   date,
+			UserID:            userID,
+			Type:              models.TransactionTypeExpense,
+			Name:              settlementName,
+			Amount:            req.Amount,
+			Date:              date,
+			GroupSettlementID: &s.ID,
 		}
 		if err := tx.Create(&fromTx).Error; err != nil {
 			return err
 		}
 		// Recipient (to_user) gains money — show as reimbursement on their dashboard
 		toTx := models.Transaction{
-			UserID: req.ToUserID,
-			Type:   models.TransactionTypeReimbursement,
-			Name:   settlementName,
-			Amount: req.Amount,
-			Date:   date,
+			UserID:            req.ToUserID,
+			Type:              models.TransactionTypeReimbursement,
+			Name:              settlementName,
+			Amount:            req.Amount,
+			Date:              date,
+			GroupSettlementID: &s.ID,
 		}
 		return tx.Create(&toTx).Error
 	})
@@ -651,6 +653,49 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		Amount:          s.Amount,
 		Date:            s.Date,
 	})
+}
+
+// DELETE /api/groups/:id/settlements/:settlementId
+func (h *GroupHandler) DeleteSettlement(c *gin.Context) {
+	userID := c.GetString("userID")
+	groupID := c.Param("id")
+	settlementID := c.Param("settlementId")
+
+	if !h.requireMember(c, groupID, userID) {
+		return
+	}
+
+	var settlement models.GroupSettlement
+	if err := h.db.First(&settlement, "id = ? AND group_id = ?", settlementID, groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "settlement not found"})
+		return
+	}
+
+	var group models.Group
+	h.db.First(&group, "id = ?", groupID)
+
+	if settlement.FromUserID != userID && group.CreatedBy != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the payer or group creator can delete a settlement"})
+		return
+	}
+
+	deleteTransactions := c.Query("delete_transactions") == "true"
+
+	txErr := h.db.Transaction(func(tx *gorm.DB) error {
+		if deleteTransactions {
+			if err := tx.Where("user_id = ? AND group_settlement_id = ?", userID, settlementID).
+				Delete(&models.Transaction{}).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Delete(&settlement).Error
+	})
+	if txErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not delete settlement"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // GET /api/groups/:id/balances

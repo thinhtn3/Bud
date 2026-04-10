@@ -78,8 +78,11 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
     api.get<GroupBalances>(`/api/groups/${groupId}/balances`).then(setBalances)
   }
 
-  function handleSettled(record: SettlementRecord) {
-    // Refresh balances to reflect the settlement
+  function handleSettled(_record: SettlementRecord) {
+    api.get<GroupBalances>(`/api/groups/${groupId}/balances`).then(setBalances)
+  }
+
+  function handleSettlementDeleted(_id: string) {
     api.get<GroupBalances>(`/api/groups/${groupId}/balances`).then(setBalances)
   }
 
@@ -192,6 +195,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
           currentUserId={currentUserId}
           groupId={groupId}
           onSettled={handleSettled}
+          onSettlementDeleted={handleSettlementDeleted}
         />
       )}
 
