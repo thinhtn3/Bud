@@ -5,7 +5,7 @@ import OnboardingRoute from '@/components/OnboardingRoute'
 import AuthPage from '@/pages/AuthPage'
 import DashboardPage from '@/pages/DashboardPage'
 import OnboardingPage from '@/pages/OnboardingPage'
-import SplitPage from '@/pages/SplitPage'
+import GroupsPage from '@/pages/GroupsPage'
 import GroupPage from '@/pages/GroupPage'
 
 export default function App() {
@@ -32,15 +32,15 @@ export default function App() {
             }
           />
           <Route
-            path="/split"
+            path="/group"
             element={
               <ProtectedRoute>
-                <SplitPage />
+                <GroupsPage />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/split/:groupId"
+            path="/group/:groupId"
             element={
               <ProtectedRoute>
                 <GroupPage />

@@ -683,8 +683,7 @@ func (h *GroupHandler) DeleteSettlement(c *gin.Context) {
 
 	txErr := h.db.Transaction(func(tx *gorm.DB) error {
 		if deleteTransactions {
-			if err := tx.Where("user_id = ? AND group_settlement_id = ?", userID, settlementID).
-				Delete(&models.Transaction{}).Error; err != nil {
+			if err := tx.Exec("DELETE FROM transactions WHERE group_settlement_id = ?", settlementID).Error; err != nil {
 				return err
 			}
 		}

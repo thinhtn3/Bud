@@ -15,8 +15,8 @@ const navItems = [
     ),
   },
   {
-    path: '/split',
-    label: 'Split',
+    path: '/group',
+    label: 'Groups',
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="5" cy="5.5" r="2.5"/>

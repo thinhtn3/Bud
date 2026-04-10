@@ -20,6 +20,16 @@ type createCategoryRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
+// GET /api/categories — returns system (seeded) categories only
+func (h *CategoryHandler) ListSystem(c *gin.Context) {
+	var cats []models.Category
+	if err := h.db.Where("user_id IS NULL").Order("name").Find(&cats).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not fetch categories"})
+		return
+	}
+	c.JSON(http.StatusOK, cats)
+}
+
 // POST /api/categories
 func (h *CategoryHandler) Create(c *gin.Context) {
 	userID := c.GetString("userID")

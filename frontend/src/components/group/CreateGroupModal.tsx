@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '../../lib/api'
 import type { Group } from '../../types'
-import { splitStyles } from './splitStyles'
+import { groupStyles } from './groupStyles'
 
 interface Props {
   open: boolean
@@ -34,15 +34,15 @@ export default function CreateGroupModal({ open, onClose, onCreated }: Props) {
 
   return createPortal(
     <>
-      <style>{splitStyles}</style>
-      <div className="split-modal-overlay" onClick={onClose}>
-        <div className="split-modal split-root" onClick={e => e.stopPropagation()}>
-          <div className="split-modal-title">Create a group</div>
+      <style>{groupStyles}</style>
+      <div className="group-modal-overlay" onClick={onClose}>
+        <div className="group-modal group-root" onClick={e => e.stopPropagation()}>
+          <div className="group-modal-title">Create a group</div>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="split-field">
-              <label className="split-label">Group name</label>
+            <div className="group-field">
+              <label className="group-label">Group name</label>
               <input
-                className="split-input"
+                className="group-input"
                 placeholder="e.g. Vegas Trip, Housemates"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -50,10 +50,10 @@ export default function CreateGroupModal({ open, onClose, onCreated }: Props) {
                 required
               />
             </div>
-            {error && <div className="split-error">{error}</div>}
-            <div className="split-modal-footer">
-              <button type="button" className="split-btn-secondary" onClick={onClose}>Cancel</button>
-              <button type="submit" className="split-btn-primary" disabled={loading || !name.trim()}>
+            {error && <div className="group-error">{error}</div>}
+            <div className="group-modal-footer">
+              <button type="button" className="group-btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="group-btn-primary" disabled={loading || !name.trim()}>
                 {loading ? 'Creating…' : 'Create group'}
               </button>
             </div>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '../../lib/api'
 import type { GroupBalances, SettlementRecord } from '../../types'
-import { splitStyles } from './splitStyles'
+import { groupStyles } from './groupStyles'
 
 interface Props {
   balances: GroupBalances
@@ -53,15 +53,15 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, onSettle
 
   return createPortal(
     <>
-      <style>{splitStyles}</style>
-      <div className="split-modal-overlay" onClick={onClose}>
-        <div className="split-modal split-root" onClick={e => e.stopPropagation()}>
-          <div className="split-modal-title">Pay {toDisplayName}</div>
+      <style>{groupStyles}</style>
+      <div className="group-modal-overlay" onClick={onClose}>
+        <div className="group-modal group-root" onClick={e => e.stopPropagation()}>
+          <div className="group-modal-title">Pay {toDisplayName}</div>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="split-field">
-              <label className="split-label">Amount</label>
+            <div className="group-field">
+              <label className="group-label">Amount</label>
               <input
-                className="split-input"
+                className="group-input"
                 type="number"
                 step="0.01"
                 min="0.01"
@@ -71,10 +71,10 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, onSettle
                 required
               />
             </div>
-            {error && <div className="split-error">{error}</div>}
-            <div className="split-modal-footer">
-              <button type="button" className="split-btn-secondary" onClick={onClose}>Cancel</button>
-              <button type="submit" className="split-btn-primary" disabled={loading || !amount}>
+            {error && <div className="group-error">{error}</div>}
+            <div className="group-modal-footer">
+              <button type="button" className="group-btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="group-btn-primary" disabled={loading || !amount}>
                 {loading ? 'Recording…' : 'Confirm payment'}
               </button>
             </div>
@@ -112,10 +112,10 @@ function DeleteSettlementModal({ settlement, groupId, onDeleted, onClose }: Dele
 
   return createPortal(
     <>
-      <style>{splitStyles}</style>
-      <div className="split-modal-overlay" onClick={onClose}>
-        <div className="split-modal split-root" onClick={e => e.stopPropagation()}>
-          <div className="split-modal-title">Delete settlement?</div>
+      <style>{groupStyles}</style>
+      <div className="group-modal-overlay" onClick={onClose}>
+        <div className="group-modal group-root" onClick={e => e.stopPropagation()}>
+          <div className="group-modal-title">Delete settlement?</div>
           <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.6)', lineHeight: 1.5 }}>
             <div style={{ marginBottom: 8 }}>
               <span style={{ fontWeight: 600, color: 'rgba(247,248,248,0.85)' }}>{settlement.from_display_name}</span>
@@ -128,11 +128,11 @@ function DeleteSettlementModal({ settlement, groupId, onDeleted, onClose }: Dele
             </div>
             <div>Do you also want to remove the related transaction from your personal dashboard?</div>
           </div>
-          {error && <div className="split-error" style={{ marginTop: 8 }}>{error}</div>}
-          <div className="split-modal-footer" style={{ flexDirection: 'column', gap: 8 }}>
+          {error && <div className="group-error" style={{ marginTop: 8 }}>{error}</div>}
+          <div className="group-modal-footer" style={{ flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', gap: 8, width: '100%' }}>
               <button
-                className="split-btn-danger"
+                className="group-btn-danger"
                 style={{ flex: 1 }}
                 disabled={loading}
                 onClick={() => handleDelete(true)}
@@ -140,7 +140,7 @@ function DeleteSettlementModal({ settlement, groupId, onDeleted, onClose }: Dele
                 {loading ? '…' : 'Remove from dashboard'}
               </button>
               <button
-                className="split-btn-secondary"
+                className="group-btn-secondary"
                 style={{ flex: 1 }}
                 disabled={loading}
                 onClick={() => handleDelete(false)}
@@ -150,7 +150,7 @@ function DeleteSettlementModal({ settlement, groupId, onDeleted, onClose }: Dele
             </div>
             <button
               type="button"
-              className="split-btn-ghost"
+              className="group-btn-ghost"
               style={{ width: '100%' }}
               disabled={loading}
               onClick={onClose}
@@ -200,22 +200,22 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <style>{splitStyles}</style>
+      <style>{groupStyles}</style>
 
       {/* Net balances */}
       <div>
-        <div className="split-section-header">Net balances</div>
+        <div className="group-section-header">Net balances</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {net_balances.length === 0 && (
             <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.35)', padding: '12px 0' }}>No expenses yet.</div>
           )}
           {net_balances.map(m => (
-            <div key={m.user_id} className={`split-balance-row${m.user_id === currentUserId ? ' is-you' : ''}`}>
-              <span className="split-balance-name">
+            <div key={m.user_id} className={`group-balance-row${m.user_id === currentUserId ? ' is-you' : ''}`}>
+              <span className="group-balance-name">
                 {m.display_name || 'Unknown'}
-                {m.user_id === currentUserId && <span className="split-you-badge">You</span>}
+                {m.user_id === currentUserId && <span className="group-you-badge">You</span>}
               </span>
-              <span className={`split-balance-amount ${balanceClass(m.balance)}`}>
+              <span className={`group-balance-amount ${balanceClass(m.balance)}`}>
                 {balanceLabel(m.balance)}
               </span>
             </div>
@@ -225,7 +225,7 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
 
       {/* Suggested settlements */}
       <div>
-        <div className="split-section-header">Suggested settlements</div>
+        <div className="group-section-header">Suggested settlements</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {settlements.length === 0 && (
             <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.35)', padding: '12px 0' }}>
@@ -235,15 +235,15 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
           {settlements.map((s, i) => {
             const isYou = s.from_user_id === currentUserId
             return (
-              <div key={i} className={`split-settlement-row${isYou ? ' involves-you' : ''}`}>
-                <span className="split-settlement-from">{s.from_display_name || 'Unknown'}</span>
+              <div key={i} className={`group-settlement-row${isYou ? ' involves-you' : ''}`}>
+                <span className="group-settlement-from">{s.from_display_name || 'Unknown'}</span>
                 <span style={{ color: 'rgba(247,248,248,0.35)' }}>pays</span>
-                <span className="split-settlement-to">{s.to_display_name || 'Unknown'}</span>
-                <span className="split-settlement-amount">{fmt(s.amount)}</span>
+                <span className="group-settlement-to">{s.to_display_name || 'Unknown'}</span>
+                <span className="group-settlement-amount">{fmt(s.amount)}</span>
                 {isYou && (
                   <div style={{ display: 'flex', gap: 6, marginLeft: 4 }}>
                     <button
-                      className="split-btn-primary"
+                      className="group-btn-primary"
                       style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
                       disabled={payingFullId === s.to_user_id}
                       onClick={() => payInFull(s.to_user_id, s.to_display_name, s.amount)}
@@ -251,7 +251,7 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
                       {payingFullId === s.to_user_id ? '…' : 'Pay in full'}
                     </button>
                     <button
-                      className="split-btn-secondary"
+                      className="group-btn-secondary"
                       style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
                       onClick={() => setSettling({ toUserID: s.to_user_id, toDisplayName: s.to_display_name, amount: s.amount })}
                     >
@@ -268,7 +268,7 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
       {/* Settlement history */}
       {history.length > 0 && (
         <div>
-          <div className="split-section-header">Settlement history</div>
+          <div className="group-section-header">Settlement history</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {history.map(h => (
               <div key={h.id} style={{
@@ -295,7 +295,7 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
                 <span style={{ color: 'rgba(247,248,248,0.25)' }}>{formatDate(h.date)}</span>
                 {h.from_user_id === currentUserId && (
                   <button
-                    className="split-btn-danger"
+                    className="group-btn-danger"
                     style={{ fontSize: 11, padding: '3px 10px' }}
                     onClick={() => setDeletingSettlement(h)}
                   >

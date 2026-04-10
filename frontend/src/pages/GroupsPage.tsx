@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '@/lib/api'
 import type { Group } from '@/types'
 import { budStyles } from '@/components/widgets/budStyles'
-import { splitStyles } from '@/components/split/splitStyles'
+import { groupStyles } from '@/components/group/groupStyles'
 import { Navbar } from '@/components/Navbar'
-import GroupList from '@/components/split/GroupList'
-import CreateGroupModal from '@/components/split/CreateGroupModal'
-import JoinGroupModal from '@/components/split/JoinGroupModal'
+import GroupList from '@/components/group/GroupList'
+import CreateGroupModal from '@/components/group/CreateGroupModal'
+import JoinGroupModal from '@/components/group/JoinGroupModal'
 
-export default function SplitPage() {
+export default function GroupsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [groups, setGroups] = useState<Group[]>([])
@@ -27,7 +27,7 @@ export default function SplitPage() {
   function handleGroupCreated(group: Group) {
     setGroups(prev => [{ ...group, member_count: 1 }, ...prev])
     setCreateOpen(false)
-    navigate('/split/' + group.id)
+    navigate('/group/' + group.id)
   }
 
   function handleGroupJoined(group: Group) {
@@ -36,7 +36,7 @@ export default function SplitPage() {
       return [group, ...prev]
     })
     setJoinOpen(false)
-    navigate('/split/' + group.id)
+    navigate('/group/' + group.id)
   }
 
   if (!user) return null
@@ -44,21 +44,21 @@ export default function SplitPage() {
   return (
     <>
       <style>{budStyles}</style>
-      <style>{splitStyles}</style>
+      <style>{groupStyles}</style>
       <Navbar />
-      <div className="bud-root split-root" style={{ paddingLeft: 220 }}>
+      <div className="bud-root group-root" style={{ paddingLeft: 220 }}>
         {/* Background blobs */}
         <div className="bud-bg-blob bud-bg-blob-1" />
         <div className="bud-bg-blob bud-bg-blob-2" />
         <div className="bud-bg-blob bud-bg-blob-3" />
 
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 720, margin: '0 auto' }}>
-          <div className="split-page-header">
-            <div className="split-page-title">Split</div>
+          <div className="group-page-header">
+            <div className="group-page-title">Split</div>
             {groups.length > 0 && (
-              <div className="split-page-actions">
-                <button className="split-btn-secondary" onClick={() => setJoinOpen(true)}>Join group</button>
-                <button className="split-btn-primary" onClick={() => setCreateOpen(true)}>+ Create group</button>
+              <div className="group-page-actions">
+                <button className="group-btn-secondary" onClick={() => setJoinOpen(true)}>Join group</button>
+                <button className="group-btn-primary" onClick={() => setCreateOpen(true)}>+ Create group</button>
               </div>
             )}
           </div>
@@ -66,7 +66,7 @@ export default function SplitPage() {
             groups={groups}
             loading={loading}
             currentUserId={user.id}
-            onSelect={(id) => navigate('/split/' + id)}
+            onSelect={(id) => navigate('/group/' + id)}
             onCreateGroup={() => setCreateOpen(true)}
             onJoinGroup={() => setJoinOpen(true)}
           />

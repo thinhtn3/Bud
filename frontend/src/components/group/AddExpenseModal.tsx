@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '../../lib/api'
 import type { GroupMember, GroupExpense } from '../../types'
-import { splitStyles } from './splitStyles'
+import { groupStyles } from './groupStyles'
 
 interface SplitRow {
   user_id: string
@@ -95,37 +95,37 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
 
   return createPortal(
     <>
-      <style>{splitStyles}</style>
-      <div className="split-modal-overlay" onClick={onClose}>
-        <div className="split-modal split-root" onClick={e => e.stopPropagation()}>
-          <div className="split-modal-title">Add expense</div>
+      <style>{groupStyles}</style>
+      <div className="group-modal-overlay" onClick={onClose}>
+        <div className="group-modal group-root" onClick={e => e.stopPropagation()}>
+          <div className="group-modal-title">Add expense</div>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-            <div className="split-field">
-              <label className="split-label">Name</label>
-              <input className="split-input" placeholder="e.g. Dinner, Airbnb" value={name}
+            <div className="group-field">
+              <label className="group-label">Name</label>
+              <input className="group-input" placeholder="e.g. Dinner, Airbnb" value={name}
                 onChange={e => setName(e.target.value)} required autoFocus />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div className="split-field">
-                <label className="split-label">Amount</label>
-                <input className="split-input" type="number" step="0.01" min="0.01"
+              <div className="group-field">
+                <label className="group-label">Amount</label>
+                <input className="group-input" type="number" step="0.01" min="0.01"
                   placeholder="0.00" value={amount}
                   onChange={e => { setAmount(e.target.value) }}
                   onBlur={recalcEvenSplit}
                   required />
               </div>
-              <div className="split-field">
-                <label className="split-label">Date</label>
-                <input className="split-input" type="date" value={date}
+              <div className="group-field">
+                <label className="group-label">Date</label>
+                <input className="group-input" type="date" value={date}
                   onChange={e => setDate(e.target.value)} required />
               </div>
             </div>
 
-            <div className="split-field">
-              <label className="split-label">Paid by</label>
-              <select className="split-select" value={paidBy} onChange={e => setPaidBy(e.target.value)}>
+            <div className="group-field">
+              <label className="group-label">Paid by</label>
+              <select className="group-select" value={paidBy} onChange={e => setPaidBy(e.target.value)}>
                 {members.map(m => (
                   <option key={m.user_id} value={m.user_id}>
                     {m.display_name}{m.user_id === currentUserId ? ' (You)' : ''}
@@ -134,22 +134,22 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
               </select>
             </div>
 
-            <div className="split-field">
+            <div className="group-field">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <label className="split-label" style={{ margin: 0 }}>Split</label>
-                <button type="button" className="split-btn-ghost" style={{ padding: '2px 8px' }}
+                <label className="group-label" style={{ margin: 0 }}>Split</label>
+                <button type="button" className="group-btn-ghost" style={{ padding: '2px 8px' }}
                   onClick={recalcEvenSplit}>
                   Even split
                 </button>
               </div>
-              <div className="split-amount-grid">
+              <div className="group-amount-grid">
                 {splits.map(s => (
-                  <div key={s.user_id} className="split-amount-row">
-                    <span className="split-amount-name">
+                  <div key={s.user_id} className="group-amount-row">
+                    <span className="group-amount-name">
                       {s.display_name}{s.user_id === currentUserId ? ' (You)' : ''}
                     </span>
                     <input
-                      className="split-amount-input"
+                      className="group-amount-input"
                       type="number"
                       step="0.01"
                       min="0"
@@ -159,7 +159,7 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
                   </div>
                 ))}
               </div>
-              <div className={`split-sum-indicator ${splitOk ? 'ok' : 'error'}`}
+              <div className={`group-sum-indicator ${splitOk ? 'ok' : 'error'}`}
                 style={{ marginTop: 8 }}>
                 <span>Total splits</span>
                 <span>
@@ -169,17 +169,17 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
               </div>
             </div>
 
-            <div className="split-field">
-              <label className="split-label">Note (optional)</label>
-              <input className="split-input" placeholder="Add a note…" value={description}
+            <div className="group-field">
+              <label className="group-label">Note (optional)</label>
+              <input className="group-input" placeholder="Add a note…" value={description}
                 onChange={e => setDescription(e.target.value)} />
             </div>
 
-            {error && <div className="split-error">{error}</div>}
+            {error && <div className="group-error">{error}</div>}
 
-            <div className="split-modal-footer">
-              <button type="button" className="split-btn-secondary" onClick={onClose}>Cancel</button>
-              <button type="submit" className="split-btn-primary"
+            <div className="group-modal-footer">
+              <button type="button" className="group-btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="group-btn-primary"
                 disabled={loading || !name.trim() || !amount || !splitOk}>
                 {loading ? 'Adding…' : 'Add expense'}
               </button>

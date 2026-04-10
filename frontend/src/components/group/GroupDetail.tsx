@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../lib/api'
 import type { GroupDetail as GroupDetailType, GroupExpense, GroupBalances, SettlementRecord } from '../../types'
-import { splitStyles } from './splitStyles'
+import { groupStyles } from './groupStyles'
 import AddExpenseModal from './AddExpenseModal'
 import BalancesPanel from './BalancesPanel'
 
@@ -91,42 +91,42 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
 
   if (loading || !group) {
     return (
-      <div className="split-root" style={{ padding: 40 }}>
-        <style>{splitStyles}</style>
-        <button className="split-back-btn" onClick={onBack}>← Back</button>
+      <div className="group-root" style={{ padding: 40 }}>
+        <style>{groupStyles}</style>
+        <button className="group-back-btn" onClick={onBack}>← Back</button>
         <div style={{ color: 'rgba(247,248,248,0.35)', fontSize: 13 }}>Loading…</div>
       </div>
     )
   }
 
   return (
-    <div className="split-root" style={{ padding: 0 }}>
-      <style>{splitStyles}</style>
+    <div className="group-root" style={{ padding: 0 }}>
+      <style>{groupStyles}</style>
 
-      <button className="split-back-btn" onClick={onBack}>← All groups</button>
+      <button className="group-back-btn" onClick={onBack}>← All groups</button>
 
-      <div className="split-detail-header">
+      <div className="group-detail-header">
         <div>
-          <div className="split-detail-name">{group.name}</div>
-          <div className="split-member-avatars" style={{ marginTop: 8 }}>
+          <div className="group-detail-name">{group.name}</div>
+          <div className="group-member-avatars" style={{ marginTop: 8 }}>
             {group.members.map(m => (
-              <span key={m.user_id} className={`split-member-chip${m.user_id === currentUserId ? ' is-you' : ''}`}>
+              <span key={m.user_id} className={`group-member-chip${m.user_id === currentUserId ? ' is-you' : ''}`}>
                 {m.display_name || 'Unknown'}{m.user_id === currentUserId ? ' (You)' : ''}
               </span>
             ))}
           </div>
         </div>
         {tab === 'expenses' && (
-          <button className="split-btn-primary" onClick={() => setAddOpen(true)}>+ Add expense</button>
+          <button className="group-btn-primary" onClick={() => setAddOpen(true)}>+ Add expense</button>
         )}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div className="split-tab-bar">
-          <button className={`split-tab${tab === 'expenses' ? ' active' : ''}`} onClick={() => setTab('expenses')}>
+        <div className="group-tab-bar">
+          <button className={`group-tab${tab === 'expenses' ? ' active' : ''}`} onClick={() => setTab('expenses')}>
             Expenses
           </button>
-          <button className={`split-tab${tab === 'balances' ? ' active' : ''}`} onClick={() => setTab('balances')}>
+          <button className={`group-tab${tab === 'balances' ? ' active' : ''}`} onClick={() => setTab('balances')}>
             Balances
           </button>
         </div>
@@ -135,28 +135,28 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
       {tab === 'expenses' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {expenses.length === 0 && (
-            <div className="split-empty-state" style={{ padding: '48px 24px' }}>
-              <div className="split-empty-state-icon">🧾</div>
+            <div className="group-empty-state" style={{ padding: '48px 24px' }}>
+              <div className="group-empty-state-icon">🧾</div>
               <h3>No expenses yet</h3>
               <p>Add the first expense to start tracking who owes what.</p>
-              <button className="split-btn-primary" onClick={() => setAddOpen(true)}>Add expense</button>
+              <button className="group-btn-primary" onClick={() => setAddOpen(true)}>Add expense</button>
             </div>
           )}
           {expenses.map(e => (
-            <div key={e.id} className="split-expense-row">
-              <div className="split-expense-header">
+            <div key={e.id} className="group-expense-row">
+              <div className="group-expense-header">
                 <div>
-                  <div className="split-expense-name">{e.name}</div>
-                  <div className="split-expense-meta">
-                    <span className="split-paid-badge">Paid by {e.paid_by_name || 'Unknown'}</span>
+                  <div className="group-expense-name">{e.name}</div>
+                  <div className="group-expense-meta">
+                    <span className="group-paid-badge">Paid by {e.paid_by_name || 'Unknown'}</span>
                     <span>{formatDate(e.date)}</span>
                     {e.description && <span>· {e.description}</span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="split-expense-amount">{fmt(e.amount)}</span>
+                  <span className="group-expense-amount">{fmt(e.amount)}</span>
                   <button
-                    className="split-btn-ghost"
+                    className="group-btn-ghost"
                     style={{ fontSize: 11 }}
                     onClick={() => toggleExpand(e.id)}
                   >
@@ -164,7 +164,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
                   </button>
                   {canDelete(e) && (
                     <button
-                      className="split-btn-danger"
+                      className="group-btn-danger"
                       style={{ fontSize: 11 }}
                       disabled={deletingId === e.id}
                       onClick={() => handleDelete(e.id)}
@@ -175,11 +175,11 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
                 </div>
               </div>
               {expandedIds.has(e.id) && (
-                <div className="split-splits-list">
+                <div className="group-splits-list">
                   {e.splits.map(s => (
-                    <div key={s.user_id} className="split-split-item">
+                    <div key={s.user_id} className="group-group-item">
                       <span>{s.display_name || 'Unknown'}{s.user_id === currentUserId ? ' (You)' : ''}</span>
-                      <span className="split-split-item-amount">{fmt(s.amount)}</span>
+                      <span className="group-group-item-amount">{fmt(s.amount)}</span>
                     </div>
                   ))}
                 </div>

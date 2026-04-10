@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Group } from '../../types'
-import { splitStyles } from './splitStyles'
+import { groupStyles } from './groupStyles'
 
 interface Props {
   groups: Group[]
@@ -43,13 +43,13 @@ export default function GroupList({ groups, loading, onSelect, onCreateGroup, on
 
   if (groups.length === 0) {
     return (
-      <div className="split-empty-state">
-        <div className="split-empty-state-icon">💸</div>
+      <div className="group-empty-state">
+        <div className="group-empty-state-icon">💸</div>
         <h3>No groups yet</h3>
         <p>Create a group to start splitting expenses with friends, roommates, or travel companions.</p>
-        <div className="split-empty-actions">
-          <button className="split-btn-primary" onClick={onCreateGroup}>Create group</button>
-          <button className="split-btn-secondary" onClick={onJoinGroup}>Join with code</button>
+        <div className="group-empty-actions">
+          <button className="group-btn-primary" onClick={onCreateGroup}>Create group</button>
+          <button className="group-btn-secondary" onClick={onJoinGroup}>Join with code</button>
         </div>
       </div>
     )
@@ -57,20 +57,20 @@ export default function GroupList({ groups, loading, onSelect, onCreateGroup, on
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <style>{splitStyles}</style>
+      <style>{groupStyles}</style>
       {groups.map(g => (
-        <div key={g.id} className="split-group-card" onClick={() => onSelect(g.id)}>
-          <div className="split-group-card-header">
-            <div className="split-group-card-name">{g.name}</div>
-            <div className="split-group-card-meta">
+        <div key={g.id} className="group-group-card" onClick={() => onSelect(g.id)}>
+          <div className="group-group-card-header">
+            <div className="group-group-card-name">{g.name}</div>
+            <div className="group-group-card-meta">
               <span>{g.member_count ?? 0} {g.member_count === 1 ? 'member' : 'members'}</span>
               <span>{formatDate(g.created_at)}</span>
             </div>
           </div>
-          <div className="split-invite-code-row" onClick={e => e.stopPropagation()}>
-            <span className="split-invite-code">{g.invite_code}</span>
+          <div className="group-invite-code-row" onClick={e => e.stopPropagation()}>
+            <span className="group-invite-code">{g.invite_code}</span>
             <button
-              className={`split-copy-btn ${copiedId === g.id ? 'copied' : ''}`}
+              className={`group-copy-btn ${copiedId === g.id ? 'copied' : ''}`}
               onClick={e => copyCode(e, g.invite_code, g.id)}
             >
               {copiedId === g.id ? 'Copied!' : 'Copy invite'}
