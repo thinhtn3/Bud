@@ -25,6 +25,7 @@ export interface Group {
   invite_code: string
   created_at: string
   member_count?: number
+  members_preview?: string[]
 }
 
 export interface GroupMember {

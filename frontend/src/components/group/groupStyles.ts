@@ -536,4 +536,208 @@ export const groupStyles = `
     border: 1px solid rgba(255,107,107,0.15);
     border-radius: 8px;
   }
+
+  /* ── Group List Cards (gl-*) ──────────────────────────────── */
+  @keyframes gl-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes gl-skeleton-pulse {
+    0%, 100% { opacity: 0.5; }
+    50%       { opacity: 1; }
+  }
+
+  .gl-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(247,248,248,0.03);
+    border: 1px solid rgba(247,248,248,0.07);
+    border-radius: 16px;
+    padding: 16px 18px;
+    cursor: pointer;
+    overflow: hidden;
+    animation: gl-in 0.32s ease-out both;
+    transition: background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+  }
+  .gl-card:hover {
+    background: rgba(247,248,248,0.055);
+    border-color: rgba(247,248,248,0.12);
+    box-shadow: 0 0 22px hsla(var(--gl-hue), 60%, 55%, 0.12), 0 6px 20px -6px rgba(0,0,0,0.35);
+    transform: translateY(-2px);
+  }
+
+  .gl-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--gl-accent);
+    border-radius: 16px 0 0 16px;
+  }
+
+  .gl-avatar {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: hsla(var(--gl-hue), 55%, 28%, 0.45);
+    border: 1px solid hsla(var(--gl-hue), 55%, 45%, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: hsl(var(--gl-hue), 62%, 68%);
+    letter-spacing: -0.01em;
+  }
+
+  .gl-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .gl-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .gl-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f7f8f8;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gl-chevron {
+    flex-shrink: 0;
+    color: rgba(247,248,248,0.2);
+    transition: color 0.15s, transform 0.15s;
+  }
+  .gl-card:hover .gl-chevron {
+    color: hsl(var(--gl-hue), 62%, 62%);
+    transform: translateX(2px);
+  }
+
+  .gl-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .gl-date {
+    font-size: 11.5px;
+    color: rgba(247,248,248,0.32);
+  }
+  .gl-member-count {
+    font-size: 11.5px;
+    color: rgba(247,248,248,0.32);
+  }
+  .gl-member-count::before {
+    content: '·';
+    margin-right: 8px;
+    opacity: 0.5;
+  }
+
+  .gl-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 3px;
+  }
+
+  .gl-dots {
+    display: flex;
+    align-items: center;
+    padding-right: 5px;
+  }
+  .gl-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: hsla(var(--gl-hue), 50%, 32%, 0.6);
+    border: 2px solid rgba(8,9,10,0.9);
+    margin-right: -5px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+    color: hsl(var(--gl-hue), 62%, 75%);
+    letter-spacing: 0;
+  }
+  .gl-dot-overflow {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(247,248,248,0.07);
+    border: 2px solid rgba(8,9,10,0.9);
+    font-size: 8.5px;
+    font-weight: 600;
+    color: rgba(247,248,248,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: -5px;
+    flex-shrink: 0;
+  }
+
+  .gl-sep {
+    width: 1px;
+    height: 12px;
+    background: rgba(247,248,248,0.1);
+    flex-shrink: 0;
+    margin-left: 5px;
+  }
+
+  .gl-invite {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .gl-code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(247,248,248,0.35);
+    letter-spacing: 0.06em;
+  }
+  .gl-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(247,248,248,0.05);
+    border: 1px solid rgba(247,248,248,0.08);
+    border-radius: 6px;
+    padding: 3px 7px;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: rgba(247,248,248,0.35);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .gl-copy-btn:hover {
+    color: rgba(247,248,248,0.75);
+    border-color: rgba(247,248,248,0.16);
+    background: rgba(247,248,248,0.08);
+  }
+  .gl-copy-btn.copied {
+    color: #9fe870;
+    border-color: rgba(159,232,112,0.22);
+    background: rgba(159,232,112,0.07);
+  }
+
+  .gl-skeleton {
+    height: 80px;
+    border-radius: 16px;
+    background: rgba(247,248,248,0.04);
+    animation: gl-skeleton-pulse 1.5s ease-in-out infinite;
+  }
 `

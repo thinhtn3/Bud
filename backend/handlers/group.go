@@ -47,7 +47,8 @@ type createExpenseRequest struct {
 
 type groupListItem struct {
 	models.Group
-	MemberCount int `json:"member_count"`
+	MemberCount    int      `json:"member_count"`
+	MembersPreview []string `json:"members_preview" gorm:"-"`
 }
 
 type memberDetail struct {
@@ -266,6 +267,42 @@ func (h *GroupHandler) ListGroups(c *gin.Context) {
 	if items == nil {
 		items = []groupListItem{}
 	}
+
+	// Fetch up to 4 member display names per group (single query, not N+1).
+	if len(items) > 0 {
+		groupIDs := make([]string, len(items))
+		for i, it := range items {
+			groupIDs[i] = it.ID
+		}
+		type memberRow struct {
+			GroupID     string `gorm:"column:group_id"`
+			DisplayName string `gorm:"column:display_name"`
+		}
+		var rows []memberRow
+		h.db.Raw(`
+			SELECT gm.group_id, p.display_name
+			FROM group_members gm
+			JOIN profiles p ON p.id = gm.user_id
+			WHERE gm.group_id IN ?
+			ORDER BY gm.joined_at ASC
+		`, groupIDs).Scan(&rows)
+
+		// Build map: groupID → first 4 names
+		preview := make(map[string][]string, len(items))
+		for _, r := range rows {
+			if len(preview[r.GroupID]) < 4 {
+				preview[r.GroupID] = append(preview[r.GroupID], r.DisplayName)
+			}
+		}
+		for i := range items {
+			if names, ok := preview[items[i].ID]; ok {
+				items[i].MembersPreview = names
+			} else {
+				items[i].MembersPreview = []string{}
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, items)
 }
 
