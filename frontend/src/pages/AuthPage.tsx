@@ -426,7 +426,7 @@ export default function AuthPage() {
     setLoginLoading(true)
     try {
       await login(loginEmail, loginPassword)
-      navigate('/')
+      navigate('/overview')
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {

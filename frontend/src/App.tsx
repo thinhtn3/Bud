@@ -7,12 +7,14 @@ import DashboardPage from '@/pages/DashboardPage'
 import OnboardingPage from '@/pages/OnboardingPage'
 import GroupsPage from '@/pages/GroupsPage'
 import GroupPage from '@/pages/GroupPage'
+import LandingPage from '@/pages/LandingPage'
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
           <Route
@@ -24,7 +26,7 @@ export default function App() {
             }
           />
           <Route
-            path="/"
+            path="/overview"
             element={
               <ProtectedRoute>
                 <DashboardPage />

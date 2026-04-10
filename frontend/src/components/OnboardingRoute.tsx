@@ -15,7 +15,7 @@ export default function OnboardingRoute({ children }: { children: ReactNode }) {
 
   if (!user) return <Navigate to="/login" replace />
 
-  if (user.preferences.onboarding_completed) return <Navigate to="/" replace />
+  if (user.preferences.onboarding_completed) return <Navigate to="/overview" replace />
 
   return <>{children}</>
 }

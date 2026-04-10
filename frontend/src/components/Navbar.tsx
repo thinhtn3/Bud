@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 
 const navItems = [
   {
-    path: '/',
+    path: '/overview',
     label: 'Dashboard',
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -71,7 +71,7 @@ export function Navbar() {
       <div className="bud-nav-items">
         {navItems.map((item) => {
           const isActive = item.path === '/'
-            ? location.pathname === '/'
+            ? location.pathname === '/overview'
             : location.pathname.startsWith(item.path)
           return (
             <button

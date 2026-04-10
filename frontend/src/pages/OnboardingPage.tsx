@@ -438,7 +438,7 @@ export default function OnboardingPage() {
       })
       if (!res.ok) throw new Error('Failed to save preferences')
       await refreshUser()
-      navigate('/')
+      navigate('/overview')
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
