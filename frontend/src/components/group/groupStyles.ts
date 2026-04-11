@@ -434,6 +434,13 @@ export const groupStyles = `
     display: flex;
     align-items: center;
     gap: 10px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    margin: 0 -8px;
+    transition: background 0.12s;
+  }
+  .group-amount-row:hover {
+    background: rgba(247,248,248,0.04);
   }
   .group-amount-name {
     flex: 1;
@@ -456,7 +463,58 @@ export const groupStyles = `
     text-align: right;
     transition: border-color 0.15s;
   }
-  .group-amount-input:focus { border-color: rgba(159,232,112,0.4); }
+  .group-amount-input:focus { border-color: rgba(159,232,112,0.4); outline: none; }
+  .group-amount-input:read-only { cursor: default; }
+  .group-amount-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Split mode toggle ────────────────────────────────────── */
+  .split-mode-toggle {
+    display: flex;
+    background: rgba(247,248,248,0.05);
+    border: 1px solid rgba(247,248,248,0.08);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .split-mode-btn {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(247,248,248,0.4);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .split-mode-btn.active {
+    background: rgba(247,248,248,0.1);
+    color: #f7f8f8;
+    font-weight: 600;
+  }
+  .split-mode-btn:hover:not(.active) { color: rgba(247,248,248,0.65); }
+
+  /* ── Split checkbox ───────────────────────────────────────── */
+  .split-checkbox {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid rgba(247,248,248,0.18);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0a0b0c;
+    transition: background 0.12s, border-color 0.12s;
+    padding: 0;
+  }
+  .split-checkbox.checked {
+    background: #9fe870;
+    border-color: #9fe870;
+  }
+  .split-checkbox:hover:not(.checked) { border-color: rgba(247,248,248,0.35); }
 
   /* ── Sum indicator ────────────────────────────────────────── */
   .group-sum-indicator {
