@@ -508,6 +508,65 @@ func (h *GroupHandler) DeleteGroup(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// DELETE /api/groups/:id/members/me
+func (h *GroupHandler) LeaveGroup(c *gin.Context) {
+	userID := c.GetString("userID")
+	groupID := c.Param("id")
+
+	if !h.requireMember(c, groupID, userID) {
+		return
+	}
+
+	var group models.Group
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.CreatedBy == userID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "the group owner cannot leave; delete the group instead"})
+		return
+	}
+
+	if err := h.db.Where("group_id = ? AND user_id = ?", groupID, userID).Delete(&models.GroupMember{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not leave group"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// DELETE /api/groups/:id/members/:userId
+func (h *GroupHandler) RemoveMember(c *gin.Context) {
+	callerID := c.GetString("userID")
+	groupID := c.Param("id")
+	targetUserID := c.Param("userId")
+
+	if !h.requireMember(c, groupID, callerID) {
+		return
+	}
+
+	var group models.Group
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.CreatedBy != callerID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the group owner can remove members"})
+		return
+	}
+	if targetUserID == callerID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot remove yourself"})
+		return
+	}
+
+	if err := h.db.Where("group_id = ? AND user_id = ?", groupID, targetUserID).Delete(&models.GroupMember{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not remove member"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 // POST /api/groups/:id/expenses
 func (h *GroupHandler) CreateExpense(c *gin.Context) {
 	userID := c.GetString("userID")

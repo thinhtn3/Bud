@@ -1308,6 +1308,11 @@ export const groupStyles = `
   }
 
   /* ── Settings tab ─────────────────────────────────────────────── */
+  .gs-row {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+  }
   .gs-section {
     background: rgba(247,248,248,0.025);
     border: 1px solid rgba(247,248,248,0.08);
@@ -1381,5 +1386,71 @@ export const groupStyles = `
     font-size: 13px;
     color: rgba(247,248,248,0.35);
     margin: 0;
+  }
+  .gs-invite-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .gs-invite-code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    color: #9fe870;
+    background: rgba(159,232,112,0.08);
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(159,232,112,0.15);
+    user-select: all;
+    flex: 1;
+  }
+  .gs-members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .gs-member-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    transition: background 0.12s;
+  }
+  .gs-member-row:hover {
+    background: rgba(247,248,248,0.03);
+  }
+  .gs-member-name {
+    font-size: 13.5px;
+    color: rgba(247,248,248,0.8);
+  }
+  .gs-owner-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9fe870;
+    background: rgba(159,232,112,0.1);
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+  }
+  .gs-remove-btn {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,107,107,0.7);
+    background: none;
+    border: 1px solid rgba(255,107,107,0.2);
+    border-radius: 6px;
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .gs-remove-btn:hover {
+    color: #ff6b6b;
+    border-color: rgba(255,107,107,0.45);
+    background: rgba(255,107,107,0.08);
+  }
+  .gs-remove-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 `

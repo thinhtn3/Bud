@@ -96,6 +96,11 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [codeCopied, setCodeCopied] = useState(false)
+  const [removingUserId, setRemovingUserId] = useState<string | null>(null)
+  const [leaveConfirm, setLeaveConfirm] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [leaveError, setLeaveError] = useState('')
 
   function prevMonth() {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
@@ -208,6 +213,35 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
     } catch {
       setDeleteError('Could not delete group. Please try again.')
       setDeleting(false)
+    }
+  }
+
+  function handleCopyCode() {
+    if (!group) return
+    navigator.clipboard.writeText(group.invite_code)
+    setCodeCopied(true)
+    setTimeout(() => setCodeCopied(false), 2000)
+  }
+
+  async function handleRemoveMember(userId: string) {
+    setRemovingUserId(userId)
+    try {
+      await api.delete(`/api/groups/${groupId}/members/${userId}`)
+      setGroup(prev => prev ? { ...prev, members: prev.members.filter(m => m.user_id !== userId) } : prev)
+    } catch { /* silent — member stays in list */ } finally {
+      setRemovingUserId(null)
+    }
+  }
+
+  async function handleLeaveGroup() {
+    setLeaving(true)
+    setLeaveError('')
+    try {
+      await api.delete(`/api/groups/${groupId}/members/me`)
+      onBack()
+    } catch {
+      setLeaveError('Could not leave group. Please try again.')
+      setLeaving(false)
     }
   }
 
@@ -402,10 +436,10 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
 
       {tab === 'settings' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {group.created_by === currentUserId ? (
-            <>
-              {/* Rename section */}
-              <div className="gs-section">
+          {/* Group name + Invite code side by side */}
+          <div className="gs-row">
+            {group.created_by === currentUserId ? (
+              <div className="gs-section" style={{ flex: 1 }}>
                 <div className="gs-section-title">Group name</div>
                 <form onSubmit={handleRename} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div className="group-field">
@@ -430,47 +464,109 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
                   </div>
                 </form>
               </div>
+            ) : (
+              <div className="gs-section" style={{ flex: 1 }}>
+                <div className="gs-section-title">Group name</div>
+                <div className="gs-readonly-name">{group.name}</div>
+                <p className="gs-readonly-note">Only the group creator can rename this group.</p>
+              </div>
+            )}
+            <div className="gs-section" style={{ flex: 1 }}>
+              <div className="gs-section-title">Invite code</div>
+              <div className="gs-invite-row">
+                <code className="gs-invite-code">{group.invite_code}</code>
+                <button type="button" className="group-btn-ghost" onClick={handleCopyCode}>
+                  {codeCopied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+          </div>
 
-              {/* Danger zone */}
-              <div className="gs-section gs-danger-zone">
-                <div className="gs-section-title gs-danger-title">Danger zone</div>
-                <p className="gs-danger-desc">Permanently delete this group and all its expenses, splits, and settlement history. This cannot be undone.</p>
-                {deleteError && <div className="group-error" style={{ marginBottom: 10 }}>{deleteError}</div>}
-                {!deleteConfirm ? (
+          {/* Members - owner only */}
+          {group.created_by === currentUserId && (
+            <div className="gs-section">
+              <div className="gs-section-title">Members</div>
+              <div className="gs-members-list">
+                {group.members.map(m => (
+                  <div key={m.user_id} className="gs-member-row">
+                    <span className="gs-member-name">
+                      {m.display_name}{m.user_id === currentUserId ? ' (You)' : ''}
+                    </span>
+                    {m.user_id === group.created_by ? (
+                      <span className="gs-owner-badge">Owner</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="gs-remove-btn"
+                        disabled={removingUserId === m.user_id}
+                        onClick={() => handleRemoveMember(m.user_id)}
+                      >
+                        {removingUserId === m.user_id ? '…' : 'Remove'}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Danger: owner sees delete, non-owner sees leave */}
+          {group.created_by === currentUserId && (
+            <div className="gs-section gs-danger-zone">
+              <div className="gs-section-title gs-danger-title">Danger zone</div>
+              <p className="gs-danger-desc">Permanently delete this group and all its expenses, splits, and settlement history. This cannot be undone.</p>
+              {deleteError && <div className="group-error" style={{ marginBottom: 10 }}>{deleteError}</div>}
+              {!deleteConfirm ? (
+                <button
+                  type="button"
+                  className="group-btn-danger"
+                  onClick={() => setDeleteConfirm(true)}
+                >
+                  Delete group
+                </button>
+              ) : (
+                <div className="gs-confirm-row">
+                  <span className="gs-confirm-text">Are you sure? This cannot be undone.</span>
                   <button
                     type="button"
-                    className="group-btn-danger"
-                    onClick={() => setDeleteConfirm(true)}
+                    className="gs-confirm-btn"
+                    disabled={deleting}
+                    onClick={handleDeleteGroup}
                   >
-                    Delete group
+                    {deleting ? 'Deleting…' : 'Yes, delete'}
                   </button>
-                ) : (
-                  <div className="gs-confirm-row">
-                    <span className="gs-confirm-text">Are you sure? This cannot be undone.</span>
-                    <button
-                      type="button"
-                      className="gs-confirm-btn"
-                      disabled={deleting}
-                      onClick={handleDeleteGroup}
-                    >
-                      {deleting ? 'Deleting…' : 'Yes, delete'}
-                    </button>
-                    <button
-                      type="button"
-                      className="group-btn-secondary"
-                      onClick={() => { setDeleteConfirm(false); setDeleteError('') }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="gs-section">
-              <div className="gs-section-title">Group name</div>
-              <div className="gs-readonly-name">{group.name}</div>
-              <p className="gs-readonly-note">Only the group creator can rename or delete this group.</p>
+                  <button
+                    type="button"
+                    className="group-btn-secondary"
+                    onClick={() => { setDeleteConfirm(false); setDeleteError('') }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {group.created_by !== currentUserId && (
+            <div className="gs-section gs-danger-zone">
+              <div className="gs-section-title gs-danger-title">Danger zone</div>
+              <p className="gs-danger-desc">Leave this group. Your expense history will remain.</p>
+              {leaveError && <div className="group-error" style={{ marginBottom: 10 }}>{leaveError}</div>}
+              {!leaveConfirm ? (
+                <button type="button" className="group-btn-danger" onClick={() => setLeaveConfirm(true)}>
+                  Leave group
+                </button>
+              ) : (
+                <div className="gs-confirm-row">
+                  <span className="gs-confirm-text">Are you sure you want to leave?</span>
+                  <button type="button" className="gs-confirm-btn" disabled={leaving} onClick={handleLeaveGroup}>
+                    {leaving ? 'Leaving…' : 'Yes, leave'}
+                  </button>
+                  <button type="button" className="group-btn-secondary" onClick={() => { setLeaveConfirm(false); setLeaveError('') }}>
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

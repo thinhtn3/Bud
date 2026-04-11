@@ -60,6 +60,8 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		api.GET("/groups/:id", groupHandler.GetGroup)
 		api.PATCH("/groups/:id", groupHandler.UpdateGroup)
 		api.DELETE("/groups/:id", groupHandler.DeleteGroup)
+		api.DELETE("/groups/:id/members/me", groupHandler.LeaveGroup)
+		api.DELETE("/groups/:id/members/:userId", groupHandler.RemoveMember)
 		api.POST("/groups/:id/expenses", groupHandler.CreateExpense)
 		api.GET("/groups/:id/expenses", groupHandler.ListExpenses)
 		api.DELETE("/groups/:id/expenses/:expenseId", groupHandler.DeleteExpense)
