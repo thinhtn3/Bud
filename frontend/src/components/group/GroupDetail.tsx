@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { api } from '../../lib/api'
 import type { GroupDetail as GroupDetailType, GroupExpense, GroupBalances, SettlementRecord } from '../../types'
+import { filterByMonth, formatMonthYear } from '../../lib/dateUtils'
 import { groupStyles } from './groupStyles'
 import AddExpenseModal from './AddExpenseModal'
 import BalancesPanel from './BalancesPanel'
@@ -48,9 +49,28 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
   const [balances, setBalances] = useState<GroupBalances | null>(null)
   const [tab, setTab] = useState<Tab>('expenses')
   const [addOpen, setAddOpen] = useState(false)
+  const now = new Date()
+  const [viewYear, setViewYear] = useState(now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(now.getMonth())
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth()
   const [loading, setLoading] = useState(true)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
+    else setViewMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (isCurrentMonth) return
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
+    else setViewMonth(m => m + 1)
+  }
+
+  const filteredExpenses = useMemo(
+    () => filterByMonth(expenses, viewYear, viewMonth),
+    [expenses, viewYear, viewMonth]
+  )
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -169,19 +189,32 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
             Stats
           </button>
         </div>
+        <div className="bud-month-nav">
+          <button className="bud-month-arrow" onClick={prevMonth} aria-label="Previous month">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <span className="bud-month-label">{formatMonthYear(viewYear, viewMonth)}</span>
+          <button className="bud-month-arrow" onClick={nextMonth} disabled={isCurrentMonth} aria-label="Next month">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {tab === 'expenses' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {expenses.length === 0 && (
+          {filteredExpenses.length === 0 && (
             <div className="group-empty-state" style={{ padding: '48px 24px' }}>
               <div className="group-empty-state-icon">🧾</div>
-              <h3>No expenses yet</h3>
-              <p>Add the first expense to start tracking who owes what.</p>
-              <button className="group-btn-primary" onClick={() => setAddOpen(true)}>Add expense</button>
+              <h3>{expenses.length === 0 ? 'No expenses yet' : 'No expenses this month'}</h3>
+              <p>{expenses.length === 0 ? 'Add the first expense to start tracking who owes what.' : 'Try navigating to a different month or add a new expense.'}</p>
+              {expenses.length === 0 && <button className="group-btn-primary" onClick={() => setAddOpen(true)}>Add expense</button>}
             </div>
           )}
-          {expenses.map(e => {
+          {filteredExpenses.map(e => {
             const hue = e.category_name ? categoryHue(e.category_name) : null
             const expanded = expandedIds.has(e.id)
             const youPaid = e.paid_by === currentUserId
@@ -296,7 +329,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
 
       {tab === 'stats' && (
         <GroupStats
-          expenses={expenses}
+          expenses={filteredExpenses}
           currentUserId={currentUserId}
           members={group.members}
         />
