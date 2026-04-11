@@ -76,8 +76,11 @@ func (h *AuthHandler) SetSession(c *gin.Context) {
 		}
 		profile = models.Profile{ID: userID, DisplayName: displayName, Currency: "USD", FinancialGoals: "[]"}
 		if err := h.db.Create(&profile).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create profile"})
-			return
+			// Concurrent first-login race: another request created the profile first
+			if err2 := h.db.First(&profile, "id = ?", userID).Error; err2 != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create profile"})
+				return
+			}
 		}
 	} else if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not load profile"})

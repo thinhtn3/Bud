@@ -259,6 +259,22 @@ export const groupStyles = `
     color: rgba(247,248,248,0.7);
   }
 
+  /* ── Balances Columns (side-by-side layout) ─────────────── */
+  .balances-columns {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .balances-col {
+    flex: 1;
+    min-width: 0;
+  }
+  @media (max-width: 640px) {
+    .balances-columns {
+      flex-direction: column;
+    }
+  }
+
   /* ── Balance Row ──────────────────────────────────────────── */
   .group-balance-row {
     display: flex;
@@ -887,6 +903,28 @@ export const groupStyles = `
   .gss-settle-btn:hover { opacity: 0.85; }
   .gss-settle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
+  .gss-settled-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(159,232,112,0.8);
+    background: rgba(159,232,112,0.08);
+    border: 1px solid rgba(159,232,112,0.15);
+    border-radius: 20px;
+    padding: 2px 9px;
+  }
+  .gss-settled-state {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(159,232,112,0.03);
+    border: 1px solid rgba(159,232,112,0.08);
+    font-size: 12.5px;
+    color: rgba(247,248,248,0.45);
+  }
+
   .gss-footer {
     display: flex;
     align-items: center;
@@ -937,16 +975,57 @@ export const groupStyles = `
   }
 
   /* ── Group Expense Card (ge-*) ────────────────────────────── */
-  .ge-card {
-    background: rgba(247,248,248,0.03);
-    border: 1px solid rgba(247,248,248,0.07);
-    border-radius: 14px;
+  .ge-date-group {
+    position: relative;
+    padding-left: 24px;
+    margin-left: 6px;
     overflow: hidden;
-    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .ge-date-heading {
+    position: relative;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(247,248,248,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 4px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ge-date-heading::before {
+    content: '';
+    position: absolute;
+    left: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(247,248,248,0.18);
+    box-sizing: border-box;
+  }
+  .ge-date-heading::after {
+    content: '';
+    position: absolute;
+    left: -15px;
+    top: calc(50% + 4px);
+    width: 2px;
+    height: 9999px;
+    background: rgba(247,248,248,0.08);
+    border-radius: 1px;
+  }
+
+  .ge-card {
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: background 0.12s;
   }
   .ge-card:hover {
-    background: rgba(247,248,248,0.05);
-    border-color: rgba(247,248,248,0.1);
+    background: rgba(255,255,255,0.025);
   }
 
   .ge-main {

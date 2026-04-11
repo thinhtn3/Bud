@@ -318,23 +318,24 @@ func (h *GroupHandler) CreateGroup(c *gin.Context) {
 	}
 
 	var group models.Group
-	err := h.db.Transaction(func(tx *gorm.DB) error {
-		code := generateInviteCode()
-		group = models.Group{
-			Name:       req.Name,
-			CreatedBy:  userID,
-			InviteCode: code,
-		}
-		if err := tx.Create(&group).Error; err != nil {
-			// Retry once on unique violation for invite code
-			group.InviteCode = generateInviteCode()
-			if err2 := tx.Create(&group).Error; err2 != nil {
-				return err2
+	var err error
+	for attempt := 0; attempt < 3; attempt++ {
+		err = h.db.Transaction(func(tx *gorm.DB) error {
+			group = models.Group{
+				Name:       req.Name,
+				CreatedBy:  userID,
+				InviteCode: generateInviteCode(),
 			}
+			if err := tx.Create(&group).Error; err != nil {
+				return err
+			}
+			member := models.GroupMember{GroupID: group.ID, UserID: userID}
+			return tx.Create(&member).Error
+		})
+		if err == nil {
+			break
 		}
-		member := models.GroupMember{GroupID: group.ID, UserID: userID}
-		return tx.Create(&member).Error
-	})
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create group"})
 		return
