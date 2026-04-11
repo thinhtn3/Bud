@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { api } from '../../lib/api'
 import type { GroupDetail as GroupDetailType, GroupExpense, GroupBalances, SettlementRecord } from '../../types'
 import { filterByMonth, formatMonthYear, parseLocalDate } from '../../lib/dateUtils'
@@ -15,7 +15,8 @@ interface Props {
   onBack: () => void
 }
 
-type Tab = 'expenses' | 'balances' | 'stats'
+type Tab = 'expenses' | 'balances' | 'stats' | 'settings'
+const TAB_ORDER: Tab[] = ['expenses', 'balances', 'stats', 'settings']
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
@@ -79,6 +80,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
   const [expenses, setExpenses] = useState<GroupExpense[]>([])
   const [balances, setBalances] = useState<GroupBalances | null>(null)
   const [tab, setTab] = useState<Tab>('expenses')
+  const tabAnimDir = useRef<'forward' | 'back'>('forward')
   const [addOpen, setAddOpen] = useState(false)
   const now = new Date()
   const [viewYear, setViewYear] = useState(now.getFullYear())
@@ -87,6 +89,13 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
   const [loading, setLoading] = useState(true)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [settingsName, setSettingsName] = useState('')
+  const [renameSaving, setRenameSaving] = useState(false)
+  const [renameSuccess, setRenameSuccess] = useState(false)
+  const [renameError, setRenameError] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   function prevMonth() {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
@@ -96,6 +105,12 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
     if (isCurrentMonth) return
     if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
     else setViewMonth(m => m + 1)
+  }
+
+  function switchTab(newTab: Tab) {
+    if (newTab === tab) return
+    tabAnimDir.current = TAB_ORDER.indexOf(newTab) > TAB_ORDER.indexOf(tab) ? 'forward' : 'back'
+    setTab(newTab)
   }
 
   const filteredExpenses = useMemo(
@@ -112,6 +127,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
         api.get<GroupBalances>(`/api/groups/${groupId}/balances`),
       ])
       setGroup(g)
+      setSettingsName(g.name)
       setExpenses(exp)
       setBalances(bal)
     } finally {
@@ -165,6 +181,36 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
   const canDelete = (expense: GroupExpense) =>
     expense.paid_by === currentUserId || group?.created_by === currentUserId
 
+  async function handleRename(e: React.FormEvent) {
+    e.preventDefault()
+    if (!settingsName.trim() || !group) return
+    setRenameSaving(true)
+    setRenameError('')
+    setRenameSuccess(false)
+    try {
+      const updated = await api.patch<GroupDetailType>(`/api/groups/${groupId}`, { name: settingsName.trim() })
+      setGroup(updated)
+      setRenameSuccess(true)
+      setTimeout(() => setRenameSuccess(false), 2500)
+    } catch {
+      setRenameError('Could not rename group. Please try again.')
+    } finally {
+      setRenameSaving(false)
+    }
+  }
+
+  async function handleDeleteGroup() {
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await api.delete(`/api/groups/${groupId}`)
+      onBack()
+    } catch {
+      setDeleteError('Could not delete group. Please try again.')
+      setDeleting(false)
+    }
+  }
+
   if (loading || !group) {
     return (
       <div className="group-root" style={{ padding: 40 }}>
@@ -210,14 +256,17 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div className="group-tab-bar">
-          <button className={`group-tab${tab === 'expenses' ? ' active' : ''}`} onClick={() => setTab('expenses')}>
+          <button className={`group-tab${tab === 'expenses' ? ' active' : ''}`} onClick={() => switchTab('expenses')}>
             Expenses
           </button>
-          <button className={`group-tab${tab === 'balances' ? ' active' : ''}`} onClick={() => setTab('balances')}>
+          <button className={`group-tab${tab === 'balances' ? ' active' : ''}`} onClick={() => switchTab('balances')}>
             Balances
           </button>
-          <button className={`group-tab${tab === 'stats' ? ' active' : ''}`} onClick={() => setTab('stats')}>
+          <button className={`group-tab${tab === 'stats' ? ' active' : ''}`} onClick={() => switchTab('stats')}>
             Stats
+          </button>
+          <button className={`group-tab${tab === 'settings' ? ' active' : ''}`} onClick={() => switchTab('settings')}>
+            Settings
           </button>
         </div>
         <div className="bud-month-nav">
@@ -235,6 +284,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
         </div>
       </div>
 
+      <div key={tab} className={`tab-content-slide tab-slide-${tabAnimDir.current}`}>
       {tab === 'expenses' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 'calc(100vh - 320px)', overflowY: 'auto', overscrollBehavior: 'contain', paddingRight: 4 }}>
           {filteredExpenses.length === 0 && (
@@ -257,7 +307,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
 
                 return (
                   <div key={e.id} className="ge-card">
-                    <div className="ge-main">
+                    <div className="ge-main" onClick={() => toggleExpand(e.id)} style={{ cursor: 'pointer' }}>
                       <div
                         className="ge-icon"
                         style={hue !== null ? {
@@ -294,20 +344,14 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
                       <div className="ge-right">
                         <div className="ge-amount">{fmt(e.amount)}</div>
                         <div className="ge-actions">
-                          <button
-                            className={`ge-splits-btn${expanded ? ' active' : ''}`}
-                            onClick={() => toggleExpand(e.id)}
-                          >
-                            {expanded ? 'Hide' : `${e.splits.length} splits`}
-                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                              <path d="M2 3.5l3 3 3-3"/>
-                            </svg>
-                          </button>
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4, transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                            <path d="M2 3.5l3 3 3-3"/>
+                          </svg>
                           {canDelete(e) && (
                             <button
                               className="ge-delete-btn"
                               disabled={deletingId === e.id}
-                              onClick={() => handleDelete(e.id)}
+                              onClick={ev => { ev.stopPropagation(); handleDelete(e.id) }}
                               title="Delete expense"
                             >
                               {deletingId === e.id ? '…' : <TrashIcon />}
@@ -355,6 +399,83 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
           members={group.members}
         />
       )}
+
+      {tab === 'settings' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {group.created_by === currentUserId ? (
+            <>
+              {/* Rename section */}
+              <div className="gs-section">
+                <div className="gs-section-title">Group name</div>
+                <form onSubmit={handleRename} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div className="group-field">
+                    <input
+                      className="group-input"
+                      value={settingsName}
+                      onChange={e => { setSettingsName(e.target.value); setRenameSuccess(false) }}
+                      placeholder="Group name"
+                      required
+                    />
+                  </div>
+                  {renameError && <div className="group-error">{renameError}</div>}
+                  {renameSuccess && <div className="gs-success">Name updated successfully.</div>}
+                  <div>
+                    <button
+                      type="submit"
+                      className="group-btn-primary"
+                      disabled={renameSaving || !settingsName.trim() || settingsName.trim() === group.name}
+                    >
+                      {renameSaving ? 'Saving…' : 'Save name'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Danger zone */}
+              <div className="gs-section gs-danger-zone">
+                <div className="gs-section-title gs-danger-title">Danger zone</div>
+                <p className="gs-danger-desc">Permanently delete this group and all its expenses, splits, and settlement history. This cannot be undone.</p>
+                {deleteError && <div className="group-error" style={{ marginBottom: 10 }}>{deleteError}</div>}
+                {!deleteConfirm ? (
+                  <button
+                    type="button"
+                    className="group-btn-danger"
+                    onClick={() => setDeleteConfirm(true)}
+                  >
+                    Delete group
+                  </button>
+                ) : (
+                  <div className="gs-confirm-row">
+                    <span className="gs-confirm-text">Are you sure? This cannot be undone.</span>
+                    <button
+                      type="button"
+                      className="gs-confirm-btn"
+                      disabled={deleting}
+                      onClick={handleDeleteGroup}
+                    >
+                      {deleting ? 'Deleting…' : 'Yes, delete'}
+                    </button>
+                    <button
+                      type="button"
+                      className="group-btn-secondary"
+                      onClick={() => { setDeleteConfirm(false); setDeleteError('') }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="gs-section">
+              <div className="gs-section-title">Group name</div>
+              <div className="gs-readonly-name">{group.name}</div>
+              <p className="gs-readonly-note">Only the group creator can rename or delete this group.</p>
+            </div>
+          )}
+        </div>
+      )}
+      </div>
 
       <AddExpenseModal
         open={addOpen}

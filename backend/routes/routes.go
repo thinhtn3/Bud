@@ -58,6 +58,8 @@ func Register(r *gin.Engine, cfg *config.Config) {
 		api.POST("/groups", groupHandler.CreateGroup)
 		api.POST("/groups/join", groupHandler.JoinGroup)
 		api.GET("/groups/:id", groupHandler.GetGroup)
+		api.PATCH("/groups/:id", groupHandler.UpdateGroup)
+		api.DELETE("/groups/:id", groupHandler.DeleteGroup)
 		api.POST("/groups/:id/expenses", groupHandler.CreateExpense)
 		api.GET("/groups/:id/expenses", groupHandler.ListExpenses)
 		api.DELETE("/groups/:id/expenses/:expenseId", groupHandler.DeleteExpense)

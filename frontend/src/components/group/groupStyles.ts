@@ -1287,4 +1287,99 @@ export const groupStyles = `
     font-family: 'SF Mono', 'Fira Code', monospace;
     flex-shrink: 0;
   }
+
+  /* ── Tab slide animation ──────────────────────────────────────── */
+  @keyframes tab-slide-in-forward {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes tab-slide-in-back {
+    from { opacity: 0; transform: translateX(-20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .tab-content-slide {
+    will-change: transform, opacity;
+  }
+  .tab-slide-forward {
+    animation: tab-slide-in-forward 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  }
+  .tab-slide-back {
+    animation: tab-slide-in-back 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  }
+
+  /* ── Settings tab ─────────────────────────────────────────────── */
+  .gs-section {
+    background: rgba(247,248,248,0.025);
+    border: 1px solid rgba(247,248,248,0.08);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .gs-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(247,248,248,0.4);
+  }
+  .gs-success {
+    font-size: 13px;
+    color: #9fe870;
+  }
+  .gs-danger-zone {
+    border-color: rgba(255,107,107,0.2);
+    background: rgba(255,107,107,0.04);
+  }
+  .gs-danger-title {
+    color: rgba(255,107,107,0.6);
+  }
+  .gs-danger-desc {
+    font-size: 13px;
+    color: rgba(247,248,248,0.45);
+    margin: 0;
+    line-height: 1.55;
+  }
+  .gs-confirm-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .gs-confirm-text {
+    font-size: 13px;
+    color: rgba(247,248,248,0.6);
+    flex: 1;
+    min-width: 160px;
+  }
+  .gs-confirm-btn {
+    background: rgba(255,107,107,0.15);
+    border: 1px solid rgba(255,107,107,0.35);
+    color: #ff6b6b;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .gs-confirm-btn:hover {
+    background: rgba(255,107,107,0.25);
+    border-color: rgba(255,107,107,0.55);
+  }
+  .gs-confirm-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .gs-readonly-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(247,248,248,0.85);
+  }
+  .gs-readonly-note {
+    font-size: 13px;
+    color: rgba(247,248,248,0.35);
+    margin: 0;
+  }
 `

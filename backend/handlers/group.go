@@ -26,6 +26,10 @@ type createGroupRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
+type updateGroupRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
 type joinGroupRequest struct {
 	InviteCode string `json:"invite_code" binding:"required"`
 }
@@ -405,6 +409,103 @@ func (h *GroupHandler) GetGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, groupDetail{Group: group, Members: members})
+}
+
+// PATCH /api/groups/:id
+func (h *GroupHandler) UpdateGroup(c *gin.Context) {
+	userID := c.GetString("userID")
+	groupID := c.Param("id")
+
+	if !h.requireMember(c, groupID, userID) {
+		return
+	}
+
+	var group models.Group
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.CreatedBy != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the group creator can rename this group"})
+		return
+	}
+
+	var req updateGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		return
+	}
+
+	if err := h.db.Model(&group).Update("name", req.Name).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not update group"})
+		return
+	}
+
+	// Return updated group detail (same shape as GetGroup)
+	type memberRow struct {
+		UserID      string    `gorm:"column:user_id"`
+		DisplayName string    `gorm:"column:display_name"`
+		JoinedAt    time.Time `gorm:"column:joined_at"`
+	}
+	var rows []memberRow
+	h.db.Raw(`
+		SELECT gm.user_id, p.display_name, gm.joined_at
+		FROM group_members gm
+		JOIN profiles p ON p.id = gm.user_id
+		WHERE gm.group_id = ?
+		ORDER BY gm.joined_at ASC
+	`, groupID).Scan(&rows)
+	members := make([]memberDetail, len(rows))
+	for i, r := range rows {
+		members[i] = memberDetail{UserID: r.UserID, DisplayName: r.DisplayName, JoinedAt: r.JoinedAt}
+	}
+	c.JSON(http.StatusOK, groupDetail{Group: group, Members: members})
+}
+
+// DELETE /api/groups/:id
+func (h *GroupHandler) DeleteGroup(c *gin.Context) {
+	userID := c.GetString("userID")
+	groupID := c.Param("id")
+
+	if !h.requireMember(c, groupID, userID) {
+		return
+	}
+
+	var group models.Group
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.CreatedBy != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the group creator can delete this group"})
+		return
+	}
+
+	err := h.db.Transaction(func(tx *gorm.DB) error {
+		// Delete splits for all expenses in this group
+		if err := tx.Exec(`
+			DELETE FROM group_expense_splits
+			WHERE expense_id IN (SELECT id FROM group_expenses WHERE group_id = ?)
+		`, groupID).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("group_id = ?", groupID).Delete(&models.GroupExpense{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("group_id = ?", groupID).Delete(&models.GroupSettlement{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("group_id = ?", groupID).Delete(&models.GroupMember{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.Group{}, "id = ?", groupID).Error
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not delete group"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // POST /api/groups/:id/expenses
