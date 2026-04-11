@@ -26,6 +26,10 @@ type createGroupRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
+type updateGroupRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
 type joinGroupRequest struct {
 	InviteCode string `json:"invite_code" binding:"required"`
 }
@@ -47,7 +51,8 @@ type createExpenseRequest struct {
 
 type groupListItem struct {
 	models.Group
-	MemberCount int `json:"member_count"`
+	MemberCount    int      `json:"member_count"`
+	MembersPreview []string `json:"members_preview" gorm:"-"`
 }
 
 type memberDetail struct {
@@ -69,8 +74,9 @@ type splitDetail struct {
 
 type expenseDetail struct {
 	models.GroupExpense
-	PaidByName string        `json:"paid_by_name"`
-	Splits     []splitDetail `json:"splits"`
+	PaidByName   string        `json:"paid_by_name"`
+	CategoryName *string       `json:"category_name"`
+	Splits       []splitDetail `json:"splits"`
 }
 
 type memberBalance struct {
@@ -266,6 +272,42 @@ func (h *GroupHandler) ListGroups(c *gin.Context) {
 	if items == nil {
 		items = []groupListItem{}
 	}
+
+	// Fetch up to 4 member display names per group (single query, not N+1).
+	if len(items) > 0 {
+		groupIDs := make([]string, len(items))
+		for i, it := range items {
+			groupIDs[i] = it.ID
+		}
+		type memberRow struct {
+			GroupID     string `gorm:"column:group_id"`
+			DisplayName string `gorm:"column:display_name"`
+		}
+		var rows []memberRow
+		h.db.Raw(`
+			SELECT gm.group_id, p.display_name
+			FROM group_members gm
+			JOIN profiles p ON p.id = gm.user_id
+			WHERE gm.group_id IN ?
+			ORDER BY gm.joined_at ASC
+		`, groupIDs).Scan(&rows)
+
+		// Build map: groupID → first 4 names
+		preview := make(map[string][]string, len(items))
+		for _, r := range rows {
+			if len(preview[r.GroupID]) < 4 {
+				preview[r.GroupID] = append(preview[r.GroupID], r.DisplayName)
+			}
+		}
+		for i := range items {
+			if names, ok := preview[items[i].ID]; ok {
+				items[i].MembersPreview = names
+			} else {
+				items[i].MembersPreview = []string{}
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, items)
 }
 
@@ -280,23 +322,24 @@ func (h *GroupHandler) CreateGroup(c *gin.Context) {
 	}
 
 	var group models.Group
-	err := h.db.Transaction(func(tx *gorm.DB) error {
-		code := generateInviteCode()
-		group = models.Group{
-			Name:       req.Name,
-			CreatedBy:  userID,
-			InviteCode: code,
-		}
-		if err := tx.Create(&group).Error; err != nil {
-			// Retry once on unique violation for invite code
-			group.InviteCode = generateInviteCode()
-			if err2 := tx.Create(&group).Error; err2 != nil {
-				return err2
+	var err error
+	for attempt := 0; attempt < 3; attempt++ {
+		err = h.db.Transaction(func(tx *gorm.DB) error {
+			group = models.Group{
+				Name:       req.Name,
+				CreatedBy:  userID,
+				InviteCode: generateInviteCode(),
 			}
+			if err := tx.Create(&group).Error; err != nil {
+				return err
+			}
+			member := models.GroupMember{GroupID: group.ID, UserID: userID}
+			return tx.Create(&member).Error
+		})
+		if err == nil {
+			break
 		}
-		member := models.GroupMember{GroupID: group.ID, UserID: userID}
-		return tx.Create(&member).Error
-	})
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create group"})
 		return
@@ -366,6 +409,103 @@ func (h *GroupHandler) GetGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, groupDetail{Group: group, Members: members})
+}
+
+// PATCH /api/groups/:id
+func (h *GroupHandler) UpdateGroup(c *gin.Context) {
+	userID := c.GetString("userID")
+	groupID := c.Param("id")
+
+	if !h.requireMember(c, groupID, userID) {
+		return
+	}
+
+	var group models.Group
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.CreatedBy != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the group creator can rename this group"})
+		return
+	}
+
+	var req updateGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		return
+	}
+
+	if err := h.db.Model(&group).Update("name", req.Name).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not update group"})
+		return
+	}
+
+	// Return updated group detail (same shape as GetGroup)
+	type memberRow struct {
+		UserID      string    `gorm:"column:user_id"`
+		DisplayName string    `gorm:"column:display_name"`
+		JoinedAt    time.Time `gorm:"column:joined_at"`
+	}
+	var rows []memberRow
+	h.db.Raw(`
+		SELECT gm.user_id, p.display_name, gm.joined_at
+		FROM group_members gm
+		JOIN profiles p ON p.id = gm.user_id
+		WHERE gm.group_id = ?
+		ORDER BY gm.joined_at ASC
+	`, groupID).Scan(&rows)
+	members := make([]memberDetail, len(rows))
+	for i, r := range rows {
+		members[i] = memberDetail{UserID: r.UserID, DisplayName: r.DisplayName, JoinedAt: r.JoinedAt}
+	}
+	c.JSON(http.StatusOK, groupDetail{Group: group, Members: members})
+}
+
+// DELETE /api/groups/:id
+func (h *GroupHandler) DeleteGroup(c *gin.Context) {
+	userID := c.GetString("userID")
+	groupID := c.Param("id")
+
+	if !h.requireMember(c, groupID, userID) {
+		return
+	}
+
+	var group models.Group
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.CreatedBy != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the group creator can delete this group"})
+		return
+	}
+
+	err := h.db.Transaction(func(tx *gorm.DB) error {
+		// Delete splits for all expenses in this group
+		if err := tx.Exec(`
+			DELETE FROM group_expense_splits
+			WHERE expense_id IN (SELECT id FROM group_expenses WHERE group_id = ?)
+		`, groupID).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("group_id = ?", groupID).Delete(&models.GroupExpense{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("group_id = ?", groupID).Delete(&models.GroupSettlement{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("group_id = ?", groupID).Delete(&models.GroupMember{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.Group{}, "id = ?", groupID).Error
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not delete group"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // POST /api/groups/:id/expenses
@@ -510,6 +650,26 @@ func (h *GroupHandler) ListExpenses(c *gin.Context) {
 	}
 	nameMap := h.buildNameMap(allUserIDs)
 
+	// Build category name map for any categories referenced by these expenses
+	catIDs := []string{}
+	for _, e := range expenses {
+		if e.CategoryID != nil {
+			catIDs = append(catIDs, *e.CategoryID)
+		}
+	}
+	catNameMap := map[string]string{}
+	if len(catIDs) > 0 {
+		type catRow struct {
+			ID   string `gorm:"column:id"`
+			Name string `gorm:"column:name"`
+		}
+		var cats []catRow
+		h.db.Raw("SELECT id, name FROM categories WHERE id IN ?", catIDs).Scan(&cats)
+		for _, c := range cats {
+			catNameMap[c.ID] = c.Name
+		}
+	}
+
 	// Group splits by expense ID
 	splitsByExpense := map[string][]models.GroupExpenseSplit{}
 	for _, s := range splits {
@@ -526,9 +686,16 @@ func (h *GroupHandler) ListExpenses(c *gin.Context) {
 				Amount:      s.Amount,
 			})
 		}
+		var catName *string
+		if e.CategoryID != nil {
+			if n, ok := catNameMap[*e.CategoryID]; ok {
+				catName = &n
+			}
+		}
 		result[i] = expenseDetail{
 			GroupExpense: e,
 			PaidByName:   nameMap[e.PaidBy],
+			CategoryName: catName,
 			Splits:       details,
 		}
 	}

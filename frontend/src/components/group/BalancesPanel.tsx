@@ -202,66 +202,71 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <style>{groupStyles}</style>
 
-      {/* Net balances */}
-      <div>
-        <div className="group-section-header">Net balances</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {net_balances.length === 0 && (
-            <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.35)', padding: '12px 0' }}>No expenses yet.</div>
-          )}
-          {net_balances.map(m => (
-            <div key={m.user_id} className={`group-balance-row${m.user_id === currentUserId ? ' is-you' : ''}`}>
-              <span className="group-balance-name">
-                {m.display_name || 'Unknown'}
-                {m.user_id === currentUserId && <span className="group-you-badge">You</span>}
-              </span>
-              <span className={`group-balance-amount ${balanceClass(m.balance)}`}>
-                {balanceLabel(m.balance)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Suggested settlements */}
-      <div>
-        <div className="group-section-header">Suggested settlements</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {settlements.length === 0 && (
-            <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.35)', padding: '12px 0' }}>
-              Everyone is settled up.
-            </div>
-          )}
-          {settlements.map((s, i) => {
-            const isYou = s.from_user_id === currentUserId
-            return (
-              <div key={i} className={`group-settlement-row${isYou ? ' involves-you' : ''}`}>
-                <span className="group-settlement-from">{s.from_display_name || 'Unknown'}</span>
-                <span style={{ color: 'rgba(247,248,248,0.35)' }}>pays</span>
-                <span className="group-settlement-to">{s.to_display_name || 'Unknown'}</span>
-                <span className="group-settlement-amount">{fmt(s.amount)}</span>
-                {isYou && (
-                  <div style={{ display: 'flex', gap: 6, marginLeft: 4 }}>
-                    <button
-                      className="group-btn-primary"
-                      style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
-                      disabled={payingFullId === s.to_user_id}
-                      onClick={() => payInFull(s.to_user_id, s.to_display_name, s.amount)}
-                    >
-                      {payingFullId === s.to_user_id ? '…' : 'Pay in full'}
-                    </button>
-                    <button
-                      className="group-btn-secondary"
-                      style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
-                      onClick={() => setSettling({ toUserID: s.to_user_id, toDisplayName: s.to_display_name, amount: s.amount })}
-                    >
-                      Custom
-                    </button>
-                  </div>
-                )}
+      {/* Net balances + Suggested settlements side by side */}
+      <div className="balances-columns">
+        {/* Net balances */}
+        <div className="balances-col">
+          <div className="group-section-header">Net balances</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {net_balances.length === 0 && (
+              <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.35)', padding: '12px 0' }}>No expenses yet.</div>
+            )}
+            {net_balances.map(m => (
+              <div key={m.user_id} className={`group-balance-row${m.user_id === currentUserId ? ' is-you' : ''}`}>
+                <span className="group-balance-name">
+                  {m.display_name || 'Unknown'}
+                  {m.user_id === currentUserId && <span className="group-you-badge">You</span>}
+                </span>
+                <span className={`group-balance-amount ${balanceClass(m.balance)}`}>
+                  {balanceLabel(m.balance)}
+                </span>
               </div>
-            )
-          })}
+            ))}
+          </div>
+        </div>
+
+        {/* Suggested settlements */}
+        <div className="balances-col">
+          <div className="group-section-header">Suggested settlements</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {settlements.length === 0 && (
+              <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.35)', padding: '12px 0' }}>
+                Everyone is settled up.
+              </div>
+            )}
+            {settlements.map((s, i) => {
+              const isYou = s.from_user_id === currentUserId
+              return (
+                <div key={i} className={`group-settlement-row${isYou ? ' involves-you' : ''}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                    <span className="group-settlement-from">{s.from_display_name || 'Unknown'}</span>
+                    <span style={{ color: 'rgba(247,248,248,0.35)' }}>pays</span>
+                    <span className="group-settlement-to">{s.to_display_name || 'Unknown'}</span>
+                    <span className="group-settlement-amount">{fmt(s.amount)}</span>
+                  </div>
+                  {isYou && (
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button
+                        className="group-btn-primary"
+                        style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
+                        disabled={payingFullId === s.to_user_id}
+                        onClick={() => payInFull(s.to_user_id, s.to_display_name, s.amount)}
+                      >
+                        {payingFullId === s.to_user_id ? '…' : 'Pay in full'}
+                      </button>
+                      <button
+                        className="group-btn-secondary"
+                        style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
+                        onClick={() => setSettling({ toUserID: s.to_user_id, toDisplayName: s.to_display_name, amount: s.amount })}
+                      >
+                        Custom
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 

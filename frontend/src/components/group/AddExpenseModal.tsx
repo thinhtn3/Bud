@@ -48,6 +48,8 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [splitMode, setSplitMode] = useState<'even' | 'custom'>('even')
+  const [involved, setInvolved] = useState<Record<string, boolean>>({})
 
   // Fetch system categories once on first open
   useEffect(() => {
@@ -55,31 +57,54 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
     api.get<Category[]>('/api/categories').then(setCategories).catch(() => {})
   }, [open])
 
-  // Init splits whenever members or amount changes
+  // Init involved state when modal opens
   useEffect(() => {
     if (!open) return
-    const amt = parseFloat(amount) || 0
-    const evens = evenSplit(amt, members.length)
-    setSplits(members.map((m, i) => ({
-      user_id: m.user_id,
-      display_name: m.display_name,
-      amount: evens[i]?.toFixed(2) ?? '0.00',
-    })))
+    const init: Record<string, boolean> = {}
+    for (const m of members) init[m.user_id] = true
+    setInvolved(init)
+    setSplitMode('even')
   }, [open, members])
 
-  function recalcEvenSplit() {
+  // Recalculate even split whenever amount or involved set changes (even mode only)
+  useEffect(() => {
+    if (!open || splitMode !== 'even') return
     const amt = parseFloat(amount) || 0
-    const evens = evenSplit(amt, members.length)
-    setSplits(prev => prev.map((s, i) => ({ ...s, amount: evens[i]?.toFixed(2) ?? '0.00' })))
+    const involvedMembers = members.filter(m => involved[m.user_id])
+    const evens = evenSplit(amt, involvedMembers.length)
+    setSplits(members.map(m => {
+      if (!involved[m.user_id]) {
+        return { user_id: m.user_id, display_name: m.display_name, amount: '0.00' }
+      }
+      const idx = involvedMembers.findIndex(im => im.user_id === m.user_id)
+      return { user_id: m.user_id, display_name: m.display_name, amount: evens[idx]?.toFixed(2) ?? '0.00' }
+    }))
+  }, [amount, involved, splitMode, open, members])
+
+  function toggleInvolved(userId: string) {
+    setInvolved(prev => {
+      const next = { ...prev, [userId]: !prev[userId] }
+      // In custom mode, zero out the unchecked member's split immediately
+      if (splitMode === 'custom' && !next[userId]) {
+        setSplits(s => s.map(r => r.user_id === userId ? { ...r, amount: '0.00' } : r))
+      }
+      return next
+    })
+  }
+
+  function switchMode(mode: 'even' | 'custom') {
+    setSplitMode(mode)
+    // Switching to even recalculates immediately via the useEffect
   }
 
   function updateSplit(userId: string, val: string) {
     setSplits(prev => prev.map(s => s.user_id === userId ? { ...s, amount: val } : s))
   }
 
-  const totalSplit = splits.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+  const involvedSplits = splits.filter(s => involved[s.user_id])
+  const totalSplit = involvedSplits.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
   const expenseAmt = parseFloat(amount) || 0
-  const splitOk = Math.abs(totalSplit - expenseAmt) < 0.01
+  const splitOk = involvedSplits.length > 0 && Math.abs(totalSplit - expenseAmt) < 0.01
 
   if (!open) return null
 
@@ -96,7 +121,7 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
         paid_by: paidBy,
         category_id: categoryId || null,
         description: description.trim() || null,
-        splits: splits.map(s => ({ user_id: s.user_id, amount: parseFloat(s.amount) || 0 })),
+        splits: involvedSplits.map(s => ({ user_id: s.user_id, amount: parseFloat(s.amount) || 0 })),
       })
       setName(''); setAmount(''); setDate(today()); setCategoryId(''); setDescription('')
       onAdded(expense)
@@ -126,8 +151,7 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
                 <label className="group-label">Amount</label>
                 <input className="group-input" type="number" step="0.01" min="0.01"
                   placeholder="0.00" value={amount}
-                  onChange={e => { setAmount(e.target.value) }}
-                  onBlur={recalcEvenSplit}
+                  onChange={e => setAmount(e.target.value)}
                   required />
               </div>
               <div className="group-field">
@@ -159,37 +183,77 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
               </div>
             </div>
 
+            {/* Split section */}
             <div className="group-field">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <label className="group-label" style={{ margin: 0 }}>Split</label>
-                <button type="button" className="group-btn-ghost" style={{ padding: '2px 8px' }}
-                  onClick={recalcEvenSplit}>
-                  Even split
-                </button>
+                <div className="split-mode-toggle">
+                  <button
+                    type="button"
+                    className={`split-mode-btn${splitMode === 'even' ? ' active' : ''}`}
+                    onClick={() => switchMode('even')}
+                  >
+                    Even
+                  </button>
+                  <button
+                    type="button"
+                    className={`split-mode-btn${splitMode === 'custom' ? ' active' : ''}`}
+                    onClick={() => switchMode('custom')}
+                  >
+                    Custom
+                  </button>
+                </div>
               </div>
+
               <div className="group-amount-grid">
-                {splits.map(s => (
-                  <div key={s.user_id} className="group-amount-row">
-                    <span className="group-amount-name">
-                      {s.display_name}{s.user_id === currentUserId ? ' (You)' : ''}
-                    </span>
-                    <input
-                      className="group-amount-input"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={s.amount}
-                      onChange={e => updateSplit(s.user_id, e.target.value)}
-                    />
-                  </div>
-                ))}
+                {splits.map(s => {
+                  const isInvolved = involved[s.user_id]
+                  const isEven = splitMode === 'even'
+                  return (
+                    <div
+                      key={s.user_id}
+                      className="group-amount-row"
+                      style={{ opacity: isInvolved ? 1 : 0.38, transition: 'opacity 0.15s' }}
+                    >
+                      {/* Checkbox */}
+                      <button
+                        type="button"
+                        className={`split-checkbox${isInvolved ? ' checked' : ''}`}
+                        onClick={() => toggleInvolved(s.user_id)}
+                        aria-label={isInvolved ? 'Exclude from split' : 'Include in split'}
+                      >
+                        {isInvolved && (
+                          <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1.5 4.5l2 2 4-4" />
+                          </svg>
+                        )}
+                      </button>
+
+                      <span className="group-amount-name" onClick={() => toggleInvolved(s.user_id)} style={{ cursor: 'pointer' }}>
+                        {s.display_name}{s.user_id === currentUserId ? ' (You)' : ''}
+                      </span>
+
+                      <input
+                        className="group-amount-input"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={s.amount}
+                        readOnly={isEven || !isInvolved}
+                        disabled={!isInvolved}
+                        onChange={e => updateSplit(s.user_id, e.target.value)}
+                        style={{ opacity: isEven ? 0.6 : 1 }}
+                      />
+                    </div>
+                  )
+                })}
               </div>
-              <div className={`group-sum-indicator ${splitOk ? 'ok' : 'error'}`}
-                style={{ marginTop: 8 }}>
+
+              <div className={`group-sum-indicator ${splitOk ? 'ok' : 'error'}`} style={{ marginTop: 8 }}>
                 <span>Total splits</span>
                 <span>
                   ${totalSplit.toFixed(2)} / ${expenseAmt.toFixed(2)}
-                  {splitOk ? ' ✓' : ' — must match'}
+                  {splitOk ? ' ✓' : involvedSplits.length === 0 ? ' — select at least one member' : ' — must match'}
                 </span>
               </div>
             </div>

@@ -82,7 +82,7 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
                           color: '#9fe870',
                           verticalAlign: 'middle',
                           letterSpacing: '0.04em',
-                        }}>GROUP</span>
+                        }}>{tx.group_name ?? 'Group'}</span>
                       )}
                     </span>
                     {(getCategoryMeta(tx.category_id) || tx.description) && (

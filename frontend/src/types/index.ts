@@ -15,6 +15,7 @@ export interface Transaction {
   card_alias_id: string | null
   group_expense_id: string | null
   group_my_share: number | null
+  group_name?: string | null
   group_reimbursements?: GroupReimbursement[]
 }
 
@@ -25,6 +26,7 @@ export interface Group {
   invite_code: string
   created_at: string
   member_count?: number
+  members_preview?: string[]
 }
 
 export interface GroupMember {
@@ -49,6 +51,7 @@ export interface GroupExpense {
   paid_by: string
   paid_by_name: string
   category_id: string | null
+  category_name: string | null
   name: string
   amount: number
   date: string

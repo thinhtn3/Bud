@@ -54,7 +54,10 @@ export default function GroupsPage() {
 
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 720, margin: '0 auto' }}>
           <div className="group-page-header">
-            <div className="group-page-title">Split</div>
+            <div>
+              <div className="group-page-title" style={{ fontSize: 28, fontWeight: 750, letterSpacing: '-0.03em' }}>Groups</div>
+              <div style={{ fontSize: 13, color: 'rgba(247,248,248,0.4)', marginTop: 4 }}>Split expenses with anyone.</div>
+            </div>
             {groups.length > 0 && (
               <div className="group-page-actions">
                 <button className="group-btn-secondary" onClick={() => setJoinOpen(true)}>Join group</button>

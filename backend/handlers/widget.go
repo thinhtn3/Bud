@@ -48,6 +48,7 @@ func (h *WidgetHandler) Save(c *gin.Context) {
 		return
 	}
 
+	var widgets []models.Widget
 	err := h.db.Transaction(func(tx *gorm.DB) error {
 		// Delete all existing widgets for this user
 		if err := tx.Where("user_id = ?", userID).Delete(&models.Widget{}).Error; err != nil {
@@ -67,17 +68,14 @@ func (h *WidgetHandler) Save(c *gin.Context) {
 			}
 		}
 
-		return nil
+		// Read back inside the transaction for a consistent result
+		return tx.Where("user_id = ?", userID).Order("position asc").Find(&widgets).Error
 	})
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not save widgets"})
 		return
 	}
-
-	// Return the saved layout
-	widgets := make([]models.Widget, 0)
-	h.db.Where("user_id = ?", userID).Order("position asc").Find(&widgets)
 
 	c.JSON(http.StatusOK, widgets)
 }
