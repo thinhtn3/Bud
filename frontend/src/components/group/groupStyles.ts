@@ -887,6 +887,55 @@ export const groupStyles = `
   .gss-settle-btn:hover { opacity: 0.85; }
   .gss-settle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
+  .gss-footer {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(247,248,248,0.025);
+    border: 1px solid rgba(247,248,248,0.07);
+  }
+  .gss-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+  .gss-stat.gss-stat-center {
+    align-items: center;
+  }
+  .gss-stat:last-child {
+    align-items: flex-end;
+  }
+  .gss-stat-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(247,248,248,0.25);
+    white-space: nowrap;
+  }
+  .gss-stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(247,248,248,0.6);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .gss-stat-value.gss-stat-owe {
+    color: #ff6b6b;
+  }
+  .gss-stat-value.gss-stat-owed {
+    color: #9fe870;
+  }
+  .gss-stat-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(247,248,248,0.07);
+    margin: 0 10px;
+    flex-shrink: 0;
+  }
+
   /* ── Group Expense Card (ge-*) ────────────────────────────── */
   .ge-card {
     background: rgba(247,248,248,0.03);

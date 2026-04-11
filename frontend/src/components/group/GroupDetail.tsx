@@ -5,7 +5,7 @@ import { groupStyles } from './groupStyles'
 import AddExpenseModal from './AddExpenseModal'
 import BalancesPanel from './BalancesPanel'
 import SettlementSummary from './SettlementSummary'
-import GroupCategoryBreakdown from './GroupCategoryBreakdown'
+import GroupStats from './GroupStats'
 import { getCategoryIcon } from '../widgets/categoryIcons'
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
   onBack: () => void
 }
 
-type Tab = 'expenses' | 'balances'
+type Tab = 'expenses' | 'balances' | 'stats'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
@@ -146,27 +146,16 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
         )}
       </div>
 
-      {(() => {
-        const hasOutstanding = (balances?.settlements.length ?? 0) > 0
-        return (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: hasOutstanding ? '1fr 1fr' : '1fr',
-            gap: 16,
-            marginBottom: 24,
-          }}>
-            {balances && (
-              <SettlementSummary
-                settlements={balances.settlements}
-                currentUserId={currentUserId}
-                groupId={groupId}
-                onSettled={handleSettled}
-              />
-            )}
-            <GroupCategoryBreakdown expenses={expenses} />
-          </div>
-        )
-      })()}
+      {balances && balances.settlements.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <SettlementSummary
+            settlements={balances.settlements}
+            currentUserId={currentUserId}
+            groupId={groupId}
+            onSettled={handleSettled}
+          />
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div className="group-tab-bar">
@@ -175,6 +164,9 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
           </button>
           <button className={`group-tab${tab === 'balances' ? ' active' : ''}`} onClick={() => setTab('balances')}>
             Balances
+          </button>
+          <button className={`group-tab${tab === 'stats' ? ' active' : ''}`} onClick={() => setTab('stats')}>
+            Stats
           </button>
         </div>
       </div>
@@ -299,6 +291,14 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
           groupId={groupId}
           onSettled={handleSettled}
           onSettlementDeleted={handleSettlementDeleted}
+        />
+      )}
+
+      {tab === 'stats' && (
+        <GroupStats
+          expenses={expenses}
+          currentUserId={currentUserId}
+          members={group.members}
         />
       )}
 

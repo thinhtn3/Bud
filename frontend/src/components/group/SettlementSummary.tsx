@@ -39,6 +39,13 @@ export default function SettlementSummary({ settlements, currentUserId, groupId,
   }
 
   const youOweCount = settlements.filter(s => s.from_user_id === currentUserId).length
+  const totalOutstanding = settlements.reduce((sum, s) => sum + s.amount, 0)
+  const youOweTotal = settlements
+    .filter(s => s.from_user_id === currentUserId)
+    .reduce((sum, s) => sum + s.amount, 0)
+  const youAreOwedTotal = settlements
+    .filter(s => s.to_user_id === currentUserId)
+    .reduce((sum, s) => sum + s.amount, 0)
 
   return (
     <div className="gss-card">
@@ -97,6 +104,26 @@ export default function SettlementSummary({ settlements, currentUserId, groupId,
             </div>
           )
         })}
+      </div>
+      <div className="gss-footer">
+        <div className="gss-stat">
+          <span className="gss-stat-label">Total outstanding</span>
+          <span className="gss-stat-value">{fmt(totalOutstanding)}</span>
+        </div>
+        <div className="gss-stat-divider" />
+        <div className="gss-stat gss-stat-center">
+          <span className="gss-stat-label">You owe</span>
+          <span className={`gss-stat-value${youOweTotal > 0 ? ' gss-stat-owe' : ''}`}>
+            {youOweTotal > 0 ? fmt(youOweTotal) : '—'}
+          </span>
+        </div>
+        <div className="gss-stat-divider" />
+        <div className="gss-stat">
+          <span className="gss-stat-label">You are owed</span>
+          <span className={`gss-stat-value${youAreOwedTotal > 0 ? ' gss-stat-owed' : ''}`}>
+            {youAreOwedTotal > 0 ? fmt(youAreOwedTotal) : '—'}
+          </span>
+        </div>
       </div>
     </div>
   )
