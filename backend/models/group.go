@@ -48,5 +48,6 @@ type GroupSettlement struct {
 	ToUserID   string    `gorm:"type:uuid;not null" json:"to_user_id"`   // who received
 	Amount     float64   `gorm:"type:decimal(12,2);not null" json:"amount"`
 	Date       time.Time `gorm:"type:date;not null" json:"date"`
+	Note       *string   `gorm:"type:text" json:"note"`
 	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
 }

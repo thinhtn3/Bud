@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { api } from '../../lib/api'
 import type { Settlement, SettlementRecord } from '../../types'
 import { groupStyles } from './groupStyles'
@@ -18,23 +19,106 @@ function initial(name: string) {
   return name.trim()[0]?.toUpperCase() ?? '?'
 }
 
-export default function SettlementSummary({ settlements, currentUserId, groupId, onSettled }: Props) {
-  const [paying, setPaying] = useState<string | null>(null) // to_user_id being paid
+function today() {
+  return new Date().toISOString().slice(0, 10)
+}
 
-  async function settle(s: Settlement) {
-    setPaying(s.to_user_id)
+interface SettleModalProps {
+  toDisplayName: string
+  toUserID: string
+  defaultAmount: number
+  groupId: string
+  pardon?: boolean
+  onSettled: (record: SettlementRecord) => void
+  onClose: () => void
+}
+
+function SettleModal({ toDisplayName, toUserID, defaultAmount, groupId, pardon, onSettled, onClose }: SettleModalProps) {
+  const [amount, setAmount] = useState(defaultAmount.toFixed(2))
+  const [note, setNote] = useState('')
+  const [date, setDate] = useState(today())
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
     try {
       const record = await api.post<SettlementRecord>(`/api/groups/${groupId}/settlements`, {
-        to_user_id: s.to_user_id,
-        amount: s.amount,
+        to_user_id: toUserID,
+        amount: parseFloat(amount),
+        date,
+        ...(note.trim() ? { note: note.trim() } : {}),
+        ...(pardon ? { pardon: true } : {}),
       })
       onSettled(record)
     } catch {
-      // error is silent — balances will stay unchanged, user can retry
+      setError('Could not record settlement. Please try again.')
     } finally {
-      setPaying(null)
+      setLoading(false)
     }
   }
+
+  return createPortal(
+    <>
+      <style>{groupStyles}</style>
+      <div className="group-modal-overlay" onClick={onClose}>
+        <div className="group-modal group-root" onClick={e => e.stopPropagation()}>
+          <div className="group-modal-title">{pardon ? `Pardon ${toDisplayName}` : `Settle up with ${toDisplayName}`}</div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="group-field">
+                <label className="group-label">Amount</label>
+                <input
+                  className="group-input"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="group-field">
+                <label className="group-label">Date</label>
+                <input
+                  className="group-input"
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="group-field">
+              <label className="group-label">Note (optional)</label>
+              <input
+                className="group-input"
+                placeholder="e.g. Venmo'd, Cash at dinner…"
+                value={note}
+                onChange={e => setNote(e.target.value)}
+              />
+            </div>
+            {error && <div className="group-error">{error}</div>}
+            <div className="group-modal-footer">
+              <button type="button" className="group-btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="group-btn-primary" disabled={loading || !amount}>
+                {loading ? 'Recording…' : pardon ? 'Confirm pardon' : 'Confirm payment'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>,
+    document.body
+  )
+}
+
+export default function SettlementSummary({ settlements, currentUserId, groupId, onSettled }: Props) {
+  const [settling, setSettling] = useState<Settlement | null>(null)
+  const [pardoning, setPardoning] = useState<Settlement | null>(null)
 
   const youOweCount = settlements.filter(s => s.from_user_id === currentUserId).length
   const totalOutstanding = settlements.reduce((sum, s) => sum + s.amount, 0)
@@ -65,7 +149,6 @@ export default function SettlementSummary({ settlements, currentUserId, groupId,
               const youOwe = s.from_user_id === currentUserId
               const owedToYou = s.to_user_id === currentUserId
               const rowClass = `gss-row${youOwe ? ' you-owe' : owedToYou ? ' owed-to-you' : ''}`
-              const isPaying = paying === s.to_user_id
 
               return (
                 <div key={i} className={rowClass}>
@@ -98,10 +181,17 @@ export default function SettlementSummary({ settlements, currentUserId, groupId,
                   {youOwe && (
                     <button
                       className="gss-settle-btn"
-                      disabled={isPaying}
-                      onClick={() => settle(s)}
+                      onClick={() => setSettling(s)}
                     >
-                      {isPaying ? '…' : 'Settle up'}
+                      Settle up
+                    </button>
+                  )}
+                  {owedToYou && (
+                    <button
+                      className="gss-pardon-btn"
+                      onClick={() => setPardoning(s)}
+                    >
+                      Pardon
                     </button>
                   )}
                 </div>
@@ -137,6 +227,29 @@ export default function SettlementSummary({ settlements, currentUserId, groupId,
           </svg>
           <span>No outstanding balances — everyone is even.</span>
         </div>
+      )}
+
+      {settling && (
+        <SettleModal
+          toDisplayName={settling.to_display_name}
+          toUserID={settling.to_user_id}
+          defaultAmount={settling.amount}
+          groupId={groupId}
+          onSettled={record => { onSettled(record); setSettling(null) }}
+          onClose={() => setSettling(null)}
+        />
+      )}
+
+      {pardoning && (
+        <SettleModal
+          toDisplayName={pardoning.from_display_name}
+          toUserID={pardoning.from_user_id}
+          defaultAmount={pardoning.amount}
+          groupId={groupId}
+          pardon
+          onSettled={record => { onSettled(record); setPardoning(null) }}
+          onClose={() => setPardoning(null)}
+        />
       )}
     </div>
   )

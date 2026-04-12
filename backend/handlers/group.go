@@ -101,6 +101,7 @@ type settlementRecord struct {
 	ToDisplayName   string    `json:"to_display_name"`
 	Amount          float64   `json:"amount"`
 	Date            time.Time `json:"date"`
+	Note            *string   `json:"note"`
 }
 
 type balancesResponse struct {
@@ -807,6 +808,8 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		ToUserID string  `json:"to_user_id" binding:"required"`
 		Amount   float64 `json:"amount" binding:"required,gt=0"`
 		Date     string  `json:"date"`
+		Note     *string `json:"note"`
+		Pardon   bool    `json:"pardon"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -828,26 +831,41 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		}
 	}
 
+	// For pardon: caller is the creditor forgiving the debtor.
+	// req.ToUserID = the debtor being pardoned.
+	// Settlement from = debtor, to = caller (creditor).
+	fromUser := userID
+	toUser := req.ToUserID
+	if req.Pardon {
+		fromUser = req.ToUserID
+		toUser = userID
+	}
+
 	var group models.Group
 	h.db.First(&group, "id = ?", groupID)
-	settlementName := "Settlement · " + group.Name
-	nameMap := h.buildNameMap(map[string]bool{userID: true, req.ToUserID: true})
+	nameMap := h.buildNameMap(map[string]bool{fromUser: true, toUser: true})
 
 	var s models.GroupSettlement
 	txErr := h.db.Transaction(func(tx *gorm.DB) error {
 		s = models.GroupSettlement{
 			GroupID:    groupID,
-			FromUserID: userID,
-			ToUserID:   req.ToUserID,
+			FromUserID: fromUser,
+			ToUserID:   toUser,
 			Amount:     req.Amount,
 			Date:       date,
+			Note:       req.Note,
 		}
 		if err := tx.Create(&s).Error; err != nil {
 			return err
 		}
-		// Payer (from_user) loses money — show as expense on their dashboard
+		// Pardon: no personal transactions — debt is simply forgiven
+		if req.Pardon {
+			return nil
+		}
+		// Normal settlement: create personal dashboard transactions
+		settlementName := "Settlement · " + group.Name
 		fromTx := models.Transaction{
-			UserID:            userID,
+			UserID:            fromUser,
 			Type:              models.TransactionTypeExpense,
 			Name:              settlementName,
 			Amount:            req.Amount,
@@ -857,9 +875,8 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		if err := tx.Create(&fromTx).Error; err != nil {
 			return err
 		}
-		// Recipient (to_user) gains money — show as reimbursement on their dashboard
 		toTx := models.Transaction{
-			UserID:            req.ToUserID,
+			UserID:            toUser,
 			Type:              models.TransactionTypeReimbursement,
 			Name:              settlementName,
 			Amount:            req.Amount,
@@ -881,6 +898,7 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		ToDisplayName:   nameMap[s.ToUserID],
 		Amount:          s.Amount,
 		Date:            s.Date,
+		Note:            s.Note,
 	})
 }
 
@@ -1006,6 +1024,7 @@ func (h *GroupHandler) GetBalances(c *gin.Context) {
 			ToDisplayName:   nameMap[s.ToUserID],
 			Amount:          s.Amount,
 			Date:            s.Date,
+			Note:            s.Note,
 		}
 	}
 

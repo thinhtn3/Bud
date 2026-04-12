@@ -320,7 +320,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
 
       <div key={tab} className={`tab-content-slide tab-slide-${tabAnimDir.current}`}>
       {tab === 'expenses' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 'calc(100vh - 320px)', overflowY: 'auto', overscrollBehavior: 'contain', paddingRight: 4 }}>
+        <>
           {filteredExpenses.length === 0 && (
             <div className="group-empty-state" style={{ padding: '48px 24px' }}>
               <div className="group-empty-state-icon">🧾</div>
@@ -329,6 +329,12 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
               {expenses.length === 0 && <button className="group-btn-primary" onClick={() => setAddOpen(true)}>Add expense</button>}
             </div>
           )}
+          {filteredExpenses.length > 0 && (
+          <div
+            className="group-expenses-scroll"
+            data-lenis-prevent-wheel=""
+            onWheel={e => e.stopPropagation()}
+          >
           {groupByDate(filteredExpenses).map(({ dateKey, label, items }) => (
             <div key={dateKey} className="ge-date-group">
               <div className="ge-date-heading">{label}</div>
@@ -414,7 +420,8 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
             </div>
           ))}
         </div>
-      )}
+          )}
+      </>)}
 
       {tab === 'balances' && balances && (
         <BalancesPanel

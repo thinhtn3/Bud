@@ -956,10 +956,26 @@ export const groupStyles = `
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s;
-    margin-left: 6px;
   }
   .gss-settle-btn:hover { opacity: 0.85; }
   .gss-settle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .gss-pardon-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid rgba(247,248,248,0.12);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: rgba(247,248,248,0.5);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .gss-pardon-btn:hover {
+    color: rgba(247,248,248,0.7);
+    border-color: rgba(247,248,248,0.25);
+    background: rgba(247,248,248,0.04);
+  }
 
   .gss-settled-badge {
     margin-left: auto;
@@ -1032,12 +1048,42 @@ export const groupStyles = `
     flex-shrink: 0;
   }
 
+  /* ── Group expenses list (scrolls inside Lenis-smoothed page) ─ */
+  .group-expenses-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: calc(100vh - 320px);
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+    padding-right: 4px;
+    padding-bottom: 24px;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* ── Group Expense Card (ge-*) ────────────────────────────── */
   .ge-date-group {
     position: relative;
     padding-left: 24px;
     margin-left: 6px;
-    overflow: hidden;
+    /* Scroll lives on the expenses list wrapper; do not clip date rows or cards */
+    overflow: visible;
+  }
+
+  /* Timeline spine for this date block only */
+  .ge-date-group::before {
+    content: '';
+    position: absolute;
+    left: -15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(247,248,248,0.08);
+    border-radius: 1px;
+    pointer-events: none;
   }
 
   .ge-date-heading {
@@ -1063,23 +1109,13 @@ export const groupStyles = `
     border-radius: 50%;
     background: rgba(247,248,248,0.18);
     box-sizing: border-box;
-  }
-  .ge-date-heading::after {
-    content: '';
-    position: absolute;
-    left: -15px;
-    top: calc(50% + 4px);
-    width: 2px;
-    height: 9999px;
-    background: rgba(247,248,248,0.08);
-    border-radius: 1px;
+    z-index: 1;
   }
 
   .ge-card {
     background: transparent;
     border: none;
     border-radius: 8px;
-    overflow: hidden;
     transition: background 0.12s;
   }
   .ge-card:hover {
