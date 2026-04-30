@@ -1640,7 +1640,7 @@ export const budStyles = `
     border-radius: 16px;
     padding: 24px;
     width: 100%;
-    max-width: 400px;
+    max-width: 560px;
     position: relative;
     animation: bud-modal-in 0.18s cubic-bezier(0.32,0.72,0,1);
     box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.4);
@@ -1886,6 +1886,16 @@ export const budStyles = `
     background: rgba(208,50,56,0.15);
     color: #d03238;
     border-color: rgba(208,50,56,0.25);
+  }
+  .bud-card-action-btn--default {
+    background: rgba(255,209,26,0.1);
+    color: #ffd11a;
+    border-color: rgba(255,209,26,0.25);
+  }
+  .bud-card-action-btn--default:hover {
+    background: rgba(255,209,26,0.16);
+    color: #ffd11a;
+    border-color: rgba(255,209,26,0.38);
   }
 
   .bud-card-form {

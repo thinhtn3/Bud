@@ -32,6 +32,7 @@ function SpendingSummarySkeleton() {
       {/* Two toggle rows stacked */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', gap: 6 }}>
+          <Skel w={56} h={26} r={20} />
           <Skel w={68} h={26} r={20} />
           <Skel w={64} h={26} r={20} />
         </div>

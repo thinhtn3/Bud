@@ -51,6 +51,28 @@
   cursor: not-allowed;
 }
 
+.bud-dd-wrapper .bud-dd-trigger-leading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bud-dd-wrapper .bud-dd-trigger-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 22px;
+  width: 34px;
+}
+
+.bud-dd-wrapper .bud-dd-trigger-icon svg {
+  max-height: 22px;
+  width: auto;
+}
+
 .bud-dd-wrapper .bud-dd-trigger-value {
   flex: 1;
   display: flex;

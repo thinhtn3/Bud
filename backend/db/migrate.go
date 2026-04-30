@@ -62,6 +62,9 @@ func addFKIfNotExists(constraintName, table, alterSQL string) {
 
 // addForeignKeys adds all DB-level FK constraints. Safe to run on every startup.
 func addForeignKeys() {
+	addFKIfNotExists("fk_profiles_default_card_alias_id", "profiles",
+		`ALTER TABLE profiles ADD CONSTRAINT fk_profiles_default_card_alias_id
+		 FOREIGN KEY (default_card_alias_id) REFERENCES card_aliases(id) ON DELETE SET NULL`)
 	addFKIfNotExists("fk_transactions_user_id", "transactions",
 		`ALTER TABLE transactions ADD CONSTRAINT fk_transactions_user_id
 		 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
@@ -120,5 +123,8 @@ func addForeignKeys() {
 	addFKIfNotExists("fk_group_settlements_to_user_id", "group_settlements",
 		`ALTER TABLE group_settlements ADD CONSTRAINT fk_group_settlements_to_user_id
 		 FOREIGN KEY (to_user_id) REFERENCES profiles(id) ON DELETE CASCADE`)
+	addFKIfNotExists("fk_group_expenses_card_alias_id", "group_expenses",
+		`ALTER TABLE group_expenses ADD CONSTRAINT fk_group_expenses_card_alias_id
+		 FOREIGN KEY (card_alias_id) REFERENCES card_aliases(id) ON DELETE SET NULL`)
 	log.Println("foreign key constraints verified")
 }

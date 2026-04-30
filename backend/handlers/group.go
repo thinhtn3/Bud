@@ -45,6 +45,7 @@ type createExpenseRequest struct {
 	Date        string       `json:"date" binding:"required"`
 	PaidBy      string       `json:"paid_by" binding:"required"`
 	CategoryID  *string      `json:"category_id"`
+	CardAliasID *string      `json:"card_alias_id"`
 	Description *string      `json:"description"`
 	Splits      []splitInput `json:"splits" binding:"required,min=1"`
 }
@@ -623,6 +624,7 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 			GroupID:     groupID,
 			PaidBy:      req.PaidBy,
 			CategoryID:  req.CategoryID,
+			CardAliasID: req.CardAliasID,
 			Name:        req.Name,
 			Amount:      req.Amount,
 			Date:        date,
@@ -658,6 +660,7 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 			Amount:         req.Amount,
 			Date:           date,
 			CategoryID:     req.CategoryID,
+			CardAliasID:    req.CardAliasID,
 			Description:    req.Description,
 			GroupExpenseID: &expense.ID,
 			GroupMyShare:   &payerShare,

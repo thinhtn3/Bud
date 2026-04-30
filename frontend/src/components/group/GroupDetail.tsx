@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { api } from '../../lib/api'
+import { useAuth } from '../../context/AuthContext'
 import type { GroupDetail as GroupDetailType, GroupExpense, GroupBalances, SettlementRecord } from '../../types'
 import { filterByMonth, formatMonthYear, parseLocalDate } from '../../lib/dateUtils'
 import { groupStyles } from './groupStyles'
@@ -76,6 +77,7 @@ function TrashIcon() {
 }
 
 export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
+  const { user } = useAuth()
   const [group, setGroup] = useState<GroupDetailType | null>(null)
   const [expenses, setExpenses] = useState<GroupExpense[]>([])
   const [balances, setBalances] = useState<GroupBalances | null>(null)
@@ -374,6 +376,14 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
                               <span>{e.category_name}</span>
                             </div>
                           )}
+                          {e.card_alias_id && (() => {
+                            const card = user?.card_aliases?.find(c => c.id === e.card_alias_id)
+                            return card ? (
+                              <div className="ge-chip ge-chip-cat">
+                                <span>{card.card_name}{card.last4 ? ` · ${card.last4}` : ''}</span>
+                              </div>
+                            ) : null
+                          })()}
                         </div>
                         {e.description && (
                           <div className="ge-note">{e.description}</div>

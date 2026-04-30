@@ -18,12 +18,13 @@ func NewPreferencesHandler(db *gorm.DB) *PreferencesHandler {
 }
 
 type savePreferencesRequest struct {
-	FinancialGoals  []string `json:"financial_goals" binding:"required"`
-	BudgetPeriod    string   `json:"budget_period" binding:"required"`
-	BudgetAmount    float64  `json:"budget_amount" binding:"required"`
-	CarryOverExcess bool     `json:"carry_over_excess"`
-	MonthlyIncome   *float64 `json:"monthly_income"`
-	Currency        string   `json:"currency" binding:"required"`
+	FinancialGoals     []string `json:"financial_goals" binding:"required"`
+	BudgetPeriod       string   `json:"budget_period" binding:"required"`
+	BudgetAmount       float64  `json:"budget_amount" binding:"required"`
+	CarryOverExcess    bool     `json:"carry_over_excess"`
+	MonthlyIncome      *float64 `json:"monthly_income"`
+	Currency           string   `json:"currency" binding:"required"`
+	DefaultCardAliasID *string  `json:"default_card_alias_id"`
 }
 
 // PUT /api/me/preferences
@@ -44,13 +45,14 @@ func (h *PreferencesHandler) SavePreferences(c *gin.Context) {
 	}
 
 	result := h.db.Model(&models.Profile{}).Where("id = ?", userID).Updates(map[string]any{
-		"onboarding_completed": true,
-		"budget_period":        req.BudgetPeriod,
-		"budget_amount":        req.BudgetAmount,
-		"carry_over_excess":    req.CarryOverExcess,
-		"monthly_income":       req.MonthlyIncome,
-		"currency":             req.Currency,
-		"financial_goals":      string(goalsJSON),
+		"onboarding_completed":   true,
+		"budget_period":          req.BudgetPeriod,
+		"budget_amount":          req.BudgetAmount,
+		"carry_over_excess":      req.CarryOverExcess,
+		"monthly_income":         req.MonthlyIncome,
+		"currency":               req.Currency,
+		"financial_goals":        string(goalsJSON),
+		"default_card_alias_id":  req.DefaultCardAliasID,
 	})
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not save preferences"})
@@ -78,5 +80,6 @@ func (h *PreferencesHandler) SavePreferences(c *gin.Context) {
 		MonthlyIncome:       profile.MonthlyIncome,
 		Currency:            profile.Currency,
 		FinancialGoals:      goals,
+		DefaultCardAliasID:  profile.DefaultCardAliasID,
 	})
 }

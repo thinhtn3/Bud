@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Transaction } from '@/types'
 import { parseLocalDate } from '@/lib/dateUtils'
 import { WidgetSkeleton } from './WidgetSkeleton'
 
-type Period = 'biweekly' | 'monthly'
+type Period = 'weekly' | 'biweekly' | 'monthly'
 type View   = 'net' | 'gross'
 
 const PERIODS: { key: Period; label: string }[] = [
+  { key: 'weekly',   label: 'Weekly'   },
   { key: 'biweekly', label: 'Biweekly' },
   { key: 'monthly',  label: 'Monthly'  },
 ]
@@ -16,16 +17,36 @@ const VIEWS: { key: View; label: string }[] = [
   { key: 'gross', label: 'Gross' },
 ]
 
+function currentWeekOfMonth(year: number, month: number): number {
+  const day = new Date().getDate()
+  if (day <= 7)  return 1
+  if (day <= 14) return 2
+  if (day <= 21) return 3
+  return 4
+}
+
 function getPeriodRange(period: Period, year: number, month: number): { start: Date; end: Date } {
   const lastDay = new Date(year, month + 1, 0).getDate()
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
+
+  if (period === 'weekly') {
+    const week = isCurrentMonth ? currentWeekOfMonth(year, month) : 4
+    const starts = [1, 8, 15, 22]
+    const ends   = [7, 14, 21, lastDay]
+    return {
+      start: new Date(year, month, starts[week - 1]),
+      end:   new Date(year, month, ends[week - 1]),
+    }
+  }
+
   if (period === 'biweekly') {
-    const now = new Date()
-    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
     const useFirstHalf = isCurrentMonth ? now.getDate() <= 15 : false
     return useFirstHalf
       ? { start: new Date(year, month, 1),  end: new Date(year, month, 15) }
       : { start: new Date(year, month, 16), end: new Date(year, month, lastDay) }
   }
+
   return { start: new Date(year, month, 1), end: new Date(year, month, lastDay) }
 }
 
@@ -40,7 +61,13 @@ function filterByPeriod(txs: Transaction[], period: Period, year: number, month:
 function toMonthlyBudget(amount: number, storedPeriod: string): number {
   if (storedPeriod === 'monthly')  return amount
   if (storedPeriod === 'biweekly') return amount * 2
-  return amount * 4
+  return amount * 4 // weekly
+}
+
+function periodScaleFactor(period: Period): number {
+  if (period === 'weekly')   return 1 / 4
+  if (period === 'biweekly') return 1 / 2
+  return 1
 }
 
 function periodLabel(period: Period, year: number, month: number): string {
@@ -48,8 +75,22 @@ function periodLabel(period: Period, year: number, month: number): string {
   const lastDay = new Date(year, month + 1, 0).getDate()
   const now = new Date()
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
-  if (isCurrentMonth) return now.getDate() <= 15 ? '1–15' : `16–${lastDay}`
-  return `16–${lastDay}`
+
+  if (period === 'biweekly') {
+    if (isCurrentMonth) return now.getDate() <= 15 ? '1–15' : `16–${lastDay}`
+    return `16–${lastDay}`
+  }
+
+  // weekly
+  const week = isCurrentMonth ? currentWeekOfMonth(year, month) : 4
+  const starts = [1, 8, 15, 22]
+  const ends   = [7, 14, 21, lastDay]
+  return `${starts[week - 1]}–${ends[week - 1]}`
+}
+
+function toPeriod(pref: string): Period {
+  if (pref === 'weekly' || pref === 'biweekly' || pref === 'monthly') return pref
+  return 'monthly'
 }
 
 interface Props {
@@ -66,30 +107,36 @@ interface Props {
 export function SpendingSummaryWidget({ transactions, loading, size = 'medium', budgetAmount, budgetPeriod, viewYear, viewMonth }: Props) {
   const [period, setPeriod] = useState<Period>('monthly')
   const [view,   setView]   = useState<View>('net')
+  const periodSeeded = useRef(false)
+
+  useEffect(() => {
+    if (!periodSeeded.current && budgetPeriod) {
+      periodSeeded.current = true
+      setPeriod(toPeriod(budgetPeriod))
+    }
+  }, [budgetPeriod])
 
   if (loading) {
     return <WidgetSkeleton type="spending_summary" size={size} />
   }
 
-  const periodTxs       = filterByPeriod(transactions, period, viewYear, viewMonth)
-  const expenses        = periodTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-  const reimbursements  = periodTxs.filter(t => t.type === 'reimbursement').reduce((s, t) => s + t.amount, 0)
-  const income          = periodTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-  const netSpending     = expenses - reimbursements
-  const expenseCount    = periodTxs.filter(t => t.type === 'expense').length
-  const incomeCount     = periodTxs.filter(t => t.type === 'income').length
-  const reimburseCount  = periodTxs.filter(t => t.type === 'reimbursement').length
+  const periodTxs      = filterByPeriod(transactions, period, viewYear, viewMonth)
+  const expenses       = periodTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const reimbursements = periodTxs.filter(t => t.type === 'reimbursement').reduce((s, t) => s + t.amount, 0)
+  const income         = periodTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const netSpending    = expenses - reimbursements
+  const expenseCount   = periodTxs.filter(t => t.type === 'expense').length
+  const incomeCount    = periodTxs.filter(t => t.type === 'income').length
+  const reimburseCount = periodTxs.filter(t => t.type === 'reimbursement').length
 
-  const displayed  = view === 'net' ? netSpending : expenses
+  const displayed = view === 'net' ? netSpending : expenses
 
   const monthlyBudget = (!!budgetAmount && budgetAmount > 0 && !!budgetPeriod)
     ? toMonthlyBudget(budgetAmount, budgetPeriod)
     : null
-  const periodBudget = monthlyBudget !== null
-    ? (period === 'biweekly' ? monthlyBudget / 2 : monthlyBudget)
-    : null
-  const budgetPct  = periodBudget ? Math.min(displayed / periodBudget, 1) : null
-  const overBudget = periodBudget !== null && displayed > periodBudget
+  const periodBudget = monthlyBudget !== null ? monthlyBudget * periodScaleFactor(period) : null
+  const budgetPct    = periodBudget ? Math.min(displayed / periodBudget, 1) : null
+  const overBudget   = periodBudget !== null && displayed > periodBudget
 
   function fmt(n: number) {
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

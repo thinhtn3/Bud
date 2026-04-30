@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
 import type { Transaction } from '@/types'
 import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
 import { CardAliasDropdown } from '@/components/widgets/CardAliasDropdown'
@@ -19,12 +20,15 @@ const TYPE_LABELS: Record<TxType, string> = {
 }
 
 export function AddTransactionModal({ onAdd, onClose }: Props) {
+  const { user } = useAuth()
+  const defaultCard = user?.preferences?.default_card_alias_id ?? ''
+
   const [type, setType]             = useState<TxType>('expense')
   const [name, setName]             = useState('')
   const [amount, setAmount]         = useState('')
   const [date, setDate]             = useState(new Date().toISOString().split('T')[0])
   const [categoryId, setCategoryId] = useState('')
-  const [cardAliasId, setCardAliasId] = useState('')
+  const [cardAliasId, setCardAliasId] = useState(defaultCard)
   const [description, setDescription] = useState('')
   const [loading, setLoading]       = useState(false)
   const [error, setError]           = useState<string | null>(null)
@@ -66,7 +70,7 @@ export function AddTransactionModal({ onAdd, onClose }: Props) {
     setAmount('')
     setDate(new Date().toISOString().split('T')[0])
     setCategoryId('')
-    setCardAliasId('')
+    setCardAliasId(defaultCard)
     setDescription('')
     setError(null)
     setSubmitted(false)

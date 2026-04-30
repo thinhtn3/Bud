@@ -108,6 +108,7 @@ type preferencesResponse struct {
 	MonthlyIncome       *float64 `json:"monthly_income"`
 	Currency            string   `json:"currency"`
 	FinancialGoals      []string `json:"financial_goals"`
+	DefaultCardAliasID  *string  `json:"default_card_alias_id"`
 }
 
 type meResponse struct {
@@ -155,6 +156,7 @@ func (h *AuthHandler) loadUserData(userID, email string) (*meResponse, error) {
 			MonthlyIncome:       profile.MonthlyIncome,
 			Currency:            profile.Currency,
 			FinancialGoals:      goals,
+				DefaultCardAliasID:  profile.DefaultCardAliasID,
 		},
 	}, nil
 }
