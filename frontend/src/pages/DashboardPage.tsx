@@ -7,6 +7,7 @@ import { WidgetGrid, WidgetCell } from '@/components/widgets/WidgetGrid'
 import { WidgetPicker } from '@/components/widgets/WidgetPicker'
 import { SpendingSummaryWidget } from '@/components/widgets/SpendingSummaryWidget'
 import { AddTransactionWidget } from '@/components/widgets/AddTransactionWidget'
+import { AddTransactionModal } from '@/components/widgets/AddTransactionModal'
 import { RecentTransactionsWidget } from '@/components/widgets/RecentTransactionsWidget'
 import { QuickAddWidget } from '@/components/widgets/QuickAddWidget'
 import { CategoryBreakdownWidget } from '@/components/widgets/CategoryBreakdownWidget'
@@ -23,9 +24,8 @@ const STORAGE_KEY = 'bud-dashboard-widgets'
 const DEFAULT_SKELETON_LAYOUT: WidgetInstance[] = [
   { id: 'skel-1', type: 'spending_summary',    size: 'medium' },
   { id: 'skel-2', type: 'recent_transactions', size: 'medium' },
-  { id: 'skel-3', type: 'add_transaction',     size: 'medium' },
-  { id: 'skel-4', type: 'category_breakdown',  size: 'medium' },
-  { id: 'skel-5', type: 'card_spending',       size: 'medium' },
+  { id: 'skel-3', type: 'category_breakdown',  size: 'medium' },
+  { id: 'skel-4', type: 'card_spending',       size: 'medium' },
 ]
 
 function loadLocalWidgets(): WidgetInstance[] {
@@ -79,6 +79,7 @@ export default function DashboardPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [prefsOpen, setPrefsOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
 
   const now = new Date()
   const [viewYear, setViewYear] = useState(now.getFullYear())
@@ -392,7 +393,12 @@ export default function DashboardPage() {
           onClose={() => setPickerOpen(false)}
         />
         {prefsOpen && <PreferencesModal onClose={() => setPrefsOpen(false)} />}
+        {addOpen && <AddTransactionModal onAdd={handleAdd} onClose={() => setAddOpen(false)} />}
       </div>
+
+      <button className="bud-fab" onClick={() => setAddOpen(true)} aria-label="Add transaction">
+        +
+      </button>
     </>
   )
 }

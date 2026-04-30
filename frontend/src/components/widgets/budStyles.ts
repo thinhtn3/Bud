@@ -877,9 +877,10 @@ export const budStyles = `
     border-radius: 9999px;
     pointer-events: none;
     transition:
-      transform      0.26s cubic-bezier(0.34, 1.20, 0.64, 1),
+      transform        0.26s cubic-bezier(0.34, 1.20, 0.64, 1),
       background-color 0.22s ease;
   }
+  /* 2-option toggle positions */
   .bud-toggle[data-active="expense"] .bud-toggle-thumb {
     transform: translateX(0%);
     background: #d03238;
@@ -894,6 +895,26 @@ export const budStyles = `
     transform: translateX(100%);
     background: #2dd4bf;
     box-shadow: 0 2px 10px rgba(45,212,191,0.28);
+  }
+
+  /* 3-option toggle — thumb is 1/3 wide, slots at 0 / 100% / 200% */
+  .bud-toggle--three .bud-toggle-thumb {
+    width: calc(33.333% - 2px);
+  }
+  .bud-toggle--three[data-active="expense"] .bud-toggle-thumb {
+    transform: translateX(0%);
+    background: #d03238;
+    box-shadow: 0 2px 10px rgba(208,50,56,0.35);
+  }
+  .bud-toggle--three[data-active="reimbursement"] .bud-toggle-thumb {
+    transform: translateX(100%);
+    background: #2dd4bf;
+    box-shadow: 0 2px 10px rgba(45,212,191,0.28);
+  }
+  .bud-toggle--three[data-active="income"] .bud-toggle-thumb {
+    transform: translateX(200%);
+    background: #9fe870;
+    box-shadow: 0 2px 10px rgba(159,232,112,0.28);
   }
 
   .bud-toggle-btn {
@@ -924,7 +945,9 @@ export const budStyles = `
   .bud-toggle[data-active="expense"]       .bud-toggle-btn[data-value="income"]:hover         { color: #d0d6e0; }
   .bud-toggle[data-active="expense"]       .bud-toggle-btn[data-value="reimbursement"]:hover  { color: #d0d6e0; }
   .bud-toggle[data-active="income"]        .bud-toggle-btn[data-value="expense"]:hover        { color: #d0d6e0; }
+  .bud-toggle[data-active="income"]        .bud-toggle-btn[data-value="reimbursement"]:hover  { color: #d0d6e0; }
   .bud-toggle[data-active="reimbursement"] .bud-toggle-btn[data-value="expense"]:hover        { color: #d0d6e0; }
+  .bud-toggle[data-active="reimbursement"] .bud-toggle-btn[data-value="income"]:hover         { color: #d0d6e0; }
 
   /* ── Form ─────────────────────────────────────────────── */
   .bud-form { display: flex; flex-direction: column; gap: 10px; }
@@ -934,7 +957,7 @@ export const budStyles = `
     width: 100%;
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 6px;
+    border-radius: 10px;
     padding: 10px 14px;
     font-size: 14px;
     line-height: 1.42857;
@@ -2078,5 +2101,70 @@ export const budStyles = `
   .bud-nav-signout-btn:hover {
     color: #8a8f98;
     background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* ── Floating action button ───────────────────────────── */
+  .bud-fab {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #9fe870;
+    color: #163300;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(159,232,112,0.30), 0 2px 8px rgba(0,0,0,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 400;
+  }
+  .bud-fab:hover {
+    transform: scale(1.07);
+    box-shadow: 0 6px 32px rgba(159,232,112,0.40), 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .bud-fab:active { transform: scale(0.96); }
+
+  /* ── Add transaction modal — success state ────────────── */
+  .bud-add-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0 4px;
+    text-align: center;
+  }
+  .bud-add-success-check { color: #9fe870; }
+  .bud-add-success-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #c8cdd6;
+    margin-bottom: 8px;
+  }
+  .bud-add-success .bud-modal-actions { width: 100%; }
+
+  /* ── Modal secondary (Done) button ───────────────────── */
+  .bud-modal-secondary {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    color: #8a8f98;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 9999px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 510;
+    font-feature-settings: "cv01","ss03";
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .bud-modal-secondary:hover {
+    background: rgba(255,255,255,0.07);
+    color: #c8cdd6;
   }
 `

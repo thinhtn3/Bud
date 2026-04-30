@@ -125,7 +125,7 @@ export function SpendingSummaryWidget({ transactions, loading, size = 'medium', 
         <div style={{ paddingRight: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <span className="bud-stat-label">{view === 'net' ? 'Net Spending' : 'Gross Expenses'}</span>
-            <p className={`bud-stat-amount ${overBudget ? 'bud-stat-amount-expense' : 'bud-stat-amount-balance'}`} style={{ marginTop: 6 }}>
+            <p className="bud-stat-amount bud-stat-amount-expense" style={{ marginTop: 6 }}>
               −${fmt(displayed)}
             </p>
             <p className="bud-stat-sub">{expenseCount} transaction{expenseCount !== 1 ? 's' : ''} · {label}</p>
