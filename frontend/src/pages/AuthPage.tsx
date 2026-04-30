@@ -387,6 +387,8 @@ const styles = `
     .auth-island { height: auto; flex-direction: column; max-width: 420px; }
     .auth-pane { width: 100%; padding: 40px 32px; }
     .auth-panel { display: none; }
+    .auth-island.is-login .auth-pane--register { display: none; }
+    .auth-island.is-register .auth-pane--login { display: none; }
   }
 `
 
@@ -468,10 +470,10 @@ export default function AuthPage() {
         <div className="auth-blob auth-blob-1" />
         <div className="auth-blob auth-blob-2" />
         <div className="auth-blob auth-blob-3" />
-        <div className="auth-island">
+        <div className={`auth-island ${mode === 'login' ? 'is-login' : 'is-register'}`}>
 
           {/* ── Login pane (left) ──────────────────────────────── */}
-          <div className="auth-pane">
+          <div className="auth-pane auth-pane--login">
             <span className="auth-wordmark">Bud</span>
             <h1 className="auth-heading">Welcome back</h1>
             <p className="auth-subheading">Sign in to your account</p>
@@ -520,7 +522,7 @@ export default function AuthPage() {
           </div>
 
           {/* ── Register pane (right) ──────────────────────────── */}
-          <div className="auth-pane">
+          <div className="auth-pane auth-pane--register">
             {regSuccess ? (
               <div className="auth-success">
                 <div className="auth-success-icon">✓</div>
