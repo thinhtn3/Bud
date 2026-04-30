@@ -1048,7 +1048,7 @@ export const groupStyles = `
     flex-shrink: 0;
   }
 
-  /* ── Group expenses list (scrolls inside Lenis-smoothed page) ─ */
+  /* ── Group expenses list ─ */
   .group-expenses-scroll {
     display: flex;
     flex-direction: column;

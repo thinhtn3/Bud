@@ -13,11 +13,20 @@ import { CategoryBreakdownWidget } from '@/components/widgets/CategoryBreakdownW
 import { CardSpendingWidget } from '@/components/widgets/CardSpendingWidget'
 import { useDragReorder } from '@/components/widgets/useDragReorder'
 import { WIDGET_REGISTRY, type WidgetType, type WidgetSize, type WidgetInstance } from '@/components/widgets/widgetRegistry'
+import { WidgetSkeleton } from '@/components/widgets/WidgetSkeleton'
 import { parseLocalDate, formatMonthYear } from '@/lib/dateUtils'
 import { PreferencesModal } from '@/components/PreferencesModal'
 import { Navbar } from '@/components/Navbar'
 
 const STORAGE_KEY = 'bud-dashboard-widgets'
+
+const DEFAULT_SKELETON_LAYOUT: WidgetInstance[] = [
+  { id: 'skel-1', type: 'spending_summary',    size: 'medium' },
+  { id: 'skel-2', type: 'recent_transactions', size: 'medium' },
+  { id: 'skel-3', type: 'add_transaction',     size: 'medium' },
+  { id: 'skel-4', type: 'category_breakdown',  size: 'medium' },
+  { id: 'skel-5', type: 'card_spending',       size: 'medium' },
+]
 
 function loadLocalWidgets(): WidgetInstance[] {
   try {
@@ -205,7 +214,7 @@ export default function DashboardPage() {
           viewMonth={viewMonth}
         />
       case 'recent_transactions':
-        return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} onUpdate={handleUpdate} onDelete={handleDelete} />
+        return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} size={w.size} onUpdate={handleUpdate} onDelete={handleDelete} />
       case 'add_transaction':
         return <AddTransactionWidget onAdd={handleAdd} size={w.size === 'small' ? 'small' : 'medium'} />
       case 'quick_add':
@@ -229,13 +238,14 @@ export default function DashboardPage() {
         <div className="bud-bg-blob bud-bg-blob-3" />
         <header className="bud-header">
           <div>
-            <p className="bud-greeting">Good {getTimeOfDay()}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span className="bud-greeting">Good {getTimeOfDay()},</span>
               <h1 className="bud-name">{user?.display_name}</h1>
               <button
                 className="bud-prefs-trigger"
                 onClick={() => setPrefsOpen(true)}
                 aria-label="Open preferences"
+                style={{ alignSelf: 'center' }}
               >
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <path d="M9.5 1.5a1.414 1.414 0 0 1 2 2L4 11H1.5V8.5L9.5 1.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -286,9 +296,15 @@ export default function DashboardPage() {
         </div>
 
         {!widgetsReady ? (
-          <div style={{ padding: '80px 0', textAlign: 'center' }}>
-            <p className="bud-tx-loading">Loading dashboard…</p>
-          </div>
+          <WidgetGrid>
+            {(loadLocalWidgets().length > 0 ? loadLocalWidgets() : DEFAULT_SKELETON_LAYOUT).map(w => (
+              <WidgetCell key={w.id} size={w.size}>
+                <div className="bud-widget-wrapper" style={{ position: 'relative', height: '100%' }}>
+                  <WidgetSkeleton type={w.type} size={w.size} />
+                </div>
+              </WidgetCell>
+            ))}
+          </WidgetGrid>
         ) : widgets.length === 0 ? (
           <div className="bud-empty-state">
             <p className="bud-empty-title">Your dashboard is empty</p>

@@ -332,7 +332,6 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
           {filteredExpenses.length > 0 && (
           <div
             className="group-expenses-scroll"
-            data-lenis-prevent-wheel=""
             onWheel={e => e.stopPropagation()}
           >
           {groupByDate(filteredExpenses).map(({ dateKey, label, items }) => (

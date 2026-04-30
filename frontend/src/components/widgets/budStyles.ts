@@ -94,8 +94,8 @@ export const budStyles = `
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 20px;
-    padding-bottom: 24px;
+    margin-bottom: 14px;
+    padding-bottom: 16px;
     border-bottom: 1px solid rgba(255,255,255,0.05);
     max-width: 1280px;
   }
@@ -158,24 +158,23 @@ export const budStyles = `
   }
   .bud-greeting {
     font-size: 13px;
-    font-weight: 510;
-    color: #8a8f98;
-    letter-spacing: -0.13px;
-    margin-bottom: 4px;
-  }
-  .bud-name {
-    font-size: 32px;
-    font-weight: 510;
-    color: #f7f8f8;
-    letter-spacing: -0.704px;
-    line-height: 1.13;
-  }
-  .bud-email {
-    font-size: 13px;
     font-weight: 400;
     color: #62666d;
     letter-spacing: -0.13px;
-    margin-top: 3px;
+  }
+  .bud-name {
+    font-size: 16px;
+    font-weight: 590;
+    color: #f7f8f8;
+    letter-spacing: -0.32px;
+    line-height: 1.3;
+  }
+  .bud-email {
+    font-size: 12px;
+    font-weight: 400;
+    color: #4a4f57;
+    letter-spacing: -0.13px;
+    margin-top: 2px;
   }
   .bud-signout {
     background: rgba(255,255,255,0.02);
@@ -220,7 +219,6 @@ export const budStyles = `
     .bud-widget-grid { max-width: 100%; }
     .bud-header { max-width: 100%; }
     .bud-stat-amount { font-size: 22px; }
-    .bud-name { font-size: 26px; }
   }
   @media (max-width: 1024px) {
     .bud-root { padding: 24px 20px; }
@@ -523,6 +521,47 @@ export const budStyles = `
   @keyframes bud-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.45; }
+  }
+
+  /* ── Skeleton primitives ──────────────────────────────── */
+  .bud-skel {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    animation: bud-pulse 1.5s ease-in-out infinite;
+  }
+  .bud-skel-circle {
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    animation: bud-pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .bud-skel-text {
+    height: 11px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    animation: bud-pulse 1.5s ease-in-out infinite;
+  }
+  .bud-skel-heading {
+    height: 18px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    animation: bud-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* ── Widget Skeleton wrapper ──────────────────────────── */
+  .bud-widget-skel {
+    padding: 20px;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .bud-widget-skel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
   }
 
   /* ── Quick Add Widget ─────────────────────────────────── */

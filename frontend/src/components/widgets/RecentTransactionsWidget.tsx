@@ -1,28 +1,54 @@
 import { useState } from 'react'
 import { parseLocalDate } from '@/lib/dateUtils'
 import { useAuth } from '@/context/AuthContext'
-import { ArrowDown, ArrowUp } from 'lucide-react'
+import { ArrowDown, ArrowUp, CreditCard } from 'lucide-react'
+import {
+  VisaFlatIcon,
+  MastercardFlatIcon,
+  AmexIcon,
+  DiscoverFlatIcon,
+} from 'react-svg-credit-card-payment-icons'
 import type { Transaction } from '@/types'
 import { EditTransactionModal } from './EditTransactionModal'
 import { getCategoryIcon } from './categoryIcons'
+import { WidgetSkeleton } from './WidgetSkeleton'
+import type { WidgetSize } from './widgetRegistry'
 
 interface Props {
   transactions: Transaction[]
   loading: boolean
   error: string | null
+  size?: WidgetSize
   onUpdate: (updated: Transaction) => void
   onDelete: (id: string) => void
 }
 
-export function RecentTransactionsWidget({ transactions, loading, error, onUpdate, onDelete }: Props) {
+export function RecentTransactionsWidget({ transactions, loading, error, size = 'medium', onUpdate, onDelete }: Props) {
   const { user } = useAuth()
   const [editing, setEditing] = useState<Transaction | null>(null)
+
+  if (loading) return <WidgetSkeleton type="recent_transactions" size={size} />
 
   function getCategoryMeta(categoryId: string | null) {
     if (!categoryId) return null
     const cat = user?.categories.find(c => c.id === categoryId)
     if (!cat) return null
     return { name: cat.name, Icon: getCategoryIcon(cat.name) }
+  }
+
+  function getCard(cardAliasId: string | null) {
+    if (!cardAliasId) return null
+    return user?.card_aliases.find(c => c.id === cardAliasId) ?? null
+  }
+
+  function networkIcon(network: string, size: number) {
+    switch (network?.toLowerCase()) {
+      case 'visa':        return <VisaFlatIcon width={size} />
+      case 'mastercard':  return <MastercardFlatIcon width={size} />
+      case 'amex':        return <AmexIcon width={size} />
+      case 'discover':    return <DiscoverFlatIcon width={size} />
+      default:            return <CreditCard size={size} color="#8a8f98" />
+    }
   }
 
   return (
@@ -34,7 +60,6 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
         )}
       </div>
 
-      {loading && <p className="bud-tx-loading">Loading…</p>}
       {error && <p className="bud-error">{error}</p>}
 
       {!loading && !error && transactions.length === 0 && (
@@ -90,6 +115,16 @@ export function RecentTransactionsWidget({ transactions, loading, error, onUpdat
                         {getCategoryMeta(tx.category_id)?.name}
                       </span>
                     )}
+                    {(() => {
+                      const card = getCard(tx.card_alias_id)
+                      if (!card) return null
+                      return (
+                        <span className="bud-tx-note" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {networkIcon(card.card_network, 14)}
+                          {card.card_name}{card.last4 ? ` · ${card.last4}` : ''}
+                        </span>
+                      )
+                    })()}
                     {tx.description && (
                       <span className="bud-tx-note">{tx.description}</span>
                     )}

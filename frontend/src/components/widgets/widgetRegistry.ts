@@ -13,9 +13,9 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
   {
     type: 'spending_summary',
     label: 'Spending Summary',
-    description: 'Net balance, total income, and total expenses',
+    description: 'Spending, income, and reimbursements by period',
     sizes: ['small', 'medium', 'large'],
-    defaultSize: 'large',
+    defaultSize: 'medium',
   },
   {
     type: 'recent_transactions',
