@@ -8,6 +8,7 @@ import {
 } from 'react-svg-credit-card-payment-icons'
 import { useAuth } from '@/context/AuthContext'
 import type { Transaction, CardAlias } from '@/types'
+import { WidgetSkeleton } from './WidgetSkeleton'
 
 interface Props {
   transactions: Transaction[]
@@ -249,7 +250,7 @@ export function CardSpendingWidget({ transactions, loading, size = 'medium' }: P
       <div className="bud-widget bud-cat-small">
         <p className="bud-widget-label" style={{ marginBottom: 12 }}>By Card</p>
 
-        {loading && <Skeleton widths={[90, 65, 45, 30]} />}
+        {loading && <WidgetSkeleton type="card_spending" size="small" />}
 
         {!loading && !hasCards && (
           <p style={{ fontSize: 12, color: '#62666d', padding: '12px 0', textAlign: 'center' }}>
@@ -330,7 +331,7 @@ export function CardSpendingWidget({ transactions, loading, size = 'medium' }: P
       )}
 
       {/* Loading */}
-      {loading && <Skeleton widths={[80, 60, 45, 35]} />}
+      {loading && <WidgetSkeleton type="card_spending" size={size ?? 'medium'} />}
 
       {/* No cards */}
       {!loading && !hasCards && (

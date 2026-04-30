@@ -35,10 +35,14 @@ export interface DropdownProps {
   /** Disable the entire dropdown. */
   disabled?: boolean
   /**
-   * Custom trigger render function. Receives `{ open, selectedLabel }`.
+   * Custom trigger render function. Receives `{ open, selectedLabel, selectedIcon }`.
    * When provided, the default trigger button is not rendered.
    */
-  trigger?: (props: { open: boolean; selectedLabel: string | undefined }) => ReactNode
+  trigger?: (props: {
+    open: boolean
+    selectedLabel: string | undefined
+    selectedIcon: ReactNode | undefined
+  }) => ReactNode
   className?: string
   /** Enable fuzzy search input inside the menu. */
   searchable?: boolean
@@ -114,9 +118,13 @@ export function Dropdown({
       o.type === undefined || o.type === 'option',
   ), [options])
 
-  const selectedLabel = value
-    ? selectableOptions.find(o => o.value === value)?.label
-    : undefined
+  const selectedOption = useMemo(() => {
+    if (value === undefined || value === null) return undefined
+    return selectableOptions.find(o => o.value === value)
+  }, [value, selectableOptions])
+
+  const selectedLabel = selectedOption?.label
+  const selectedIcon = selectedOption?.icon
 
   // Filtered options for display when searchable
   const displayOptions = useMemo(() => {
@@ -337,7 +345,7 @@ export function Dropdown({
           onClick={() => open ? closeMenu() : openMenu()}
           style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
         >
-          {trigger({ open, selectedLabel })}
+          {trigger({ open, selectedLabel, selectedIcon })}
         </div>
       ) : (
         <button
@@ -352,11 +360,18 @@ export function Dropdown({
           onClick={() => open ? closeMenu() : openMenu()}
           onKeyDown={onTriggerKeyDown}
         >
-          <span
-            className="bud-dd-trigger-value"
-            data-placeholder={!selectedLabel || undefined}
-          >
-            {selectedLabel ?? placeholder}
+          <span className="bud-dd-trigger-leading">
+            {selectedIcon && (
+              <span className="bud-dd-trigger-icon" aria-hidden>
+                {selectedIcon}
+              </span>
+            )}
+            <span
+              className="bud-dd-trigger-value"
+              data-placeholder={!selectedLabel || undefined}
+            >
+              {selectedLabel ?? placeholder}
+            </span>
           </span>
           <span className="bud-dd-chevron" aria-hidden="true">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

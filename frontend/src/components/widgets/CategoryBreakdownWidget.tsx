@@ -6,6 +6,7 @@ import {
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
+import { WidgetSkeleton } from './WidgetSkeleton'
 // transactions prop is already filtered to current month by DashboardPage
 
 interface Category {
@@ -139,19 +140,7 @@ export function CategoryBreakdownWidget({ transactions, loading, size = 'medium'
       <div className="bud-widget bud-cat-small">
         <p className="bud-widget-label" style={{ marginBottom: 12 }}>By Category</p>
 
-        {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[90, 65, 45, 30].map((w, i) => (
-              <div key={i} style={{
-                height: 14, borderRadius: 4,
-                background: 'rgba(255,255,255,0.04)',
-                width: `${w}%`,
-                animation: 'bud-pulse 1.5s ease-in-out infinite',
-                animationDelay: `${i * 0.1}s`,
-              }} />
-            ))}
-          </div>
-        )}
+        {loading && <WidgetSkeleton type="category_breakdown" size="small" />}
 
         {!loading && topData.length === 0 && (
           <p style={{ fontSize: 12, color: '#62666d', padding: '12px 0', textAlign: 'center' }}>
@@ -202,19 +191,7 @@ export function CategoryBreakdownWidget({ transactions, loading, size = 'medium'
       </div>
 
       {/* Loading */}
-      {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[80, 60, 45, 35].map((w, i) => (
-            <div key={i} style={{
-              height: 24, borderRadius: 4,
-              background: 'rgba(255,255,255,0.04)',
-              width: `${w}%`,
-              animation: 'bud-pulse 1.5s ease-in-out infinite',
-              animationDelay: `${i * 0.1}s`,
-            }} />
-          ))}
-        </div>
-      )}
+      {loading && <WidgetSkeleton type="category_breakdown" size={size ?? 'medium'} />}
 
       {/* Empty state */}
       {!loading && data.length === 0 && (

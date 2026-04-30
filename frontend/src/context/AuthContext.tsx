@@ -13,6 +13,7 @@ interface UserPreferences {
   monthly_income: number | null
   currency: string
   financial_goals: string[]
+  default_card_alias_id: string | null
 }
 
 interface User {

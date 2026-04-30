@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { User } from 'lucide-react'
 import { api } from '../../lib/api'
+import { useAuth } from '../../context/AuthContext'
 import type { GroupMember, GroupExpense } from '../../types'
+import { Dropdown } from '@/components/ui/Dropdown'
+import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
+import { CardAliasDropdown } from '@/components/widgets/CardAliasDropdown'
 import { groupStyles } from './groupStyles'
-
-interface Category {
-  id: string
-  name: string
-}
 
 interface SplitRow {
   user_id: string
@@ -38,24 +38,20 @@ function evenSplit(amount: number, memberCount: number): number[] {
 }
 
 export default function AddExpenseModal({ open, onClose, members, groupId, currentUserId, onAdded }: Props) {
+  const { user } = useAuth()
+  const defaultCard = user?.preferences?.default_card_alias_id ?? ''
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(today())
   const [paidBy, setPaidBy] = useState(currentUserId)
   const [categoryId, setCategoryId] = useState('')
+  const [cardAliasId, setCardAliasId] = useState(defaultCard)
   const [description, setDescription] = useState('')
   const [splits, setSplits] = useState<SplitRow[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [splitMode, setSplitMode] = useState<'even' | 'custom'>('even')
   const [involved, setInvolved] = useState<Record<string, boolean>>({})
-
-  // Fetch system categories once on first open
-  useEffect(() => {
-    if (!open || categories.length > 0) return
-    api.get<Category[]>('/api/categories').then(setCategories).catch(() => {})
-  }, [open])
 
   // Init involved state when modal opens
   useEffect(() => {
@@ -92,6 +88,10 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
     })
   }
 
+  useEffect(() => {
+    if (paidBy !== currentUserId) setCardAliasId('')
+  }, [paidBy, currentUserId])
+
   function switchMode(mode: 'even' | 'custom') {
     setSplitMode(mode)
     // Switching to even recalculates immediately via the useEffect
@@ -120,10 +120,11 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
         date,
         paid_by: paidBy,
         category_id: categoryId || null,
+        card_alias_id: cardAliasId || null,
         description: description.trim() || null,
         splits: involvedSplits.map(s => ({ user_id: s.user_id, amount: parseFloat(s.amount) || 0 })),
       })
-      setName(''); setAmount(''); setDate(today()); setCategoryId(''); setDescription('')
+      setName(''); setAmount(''); setDate(today()); setCategoryId(''); setCardAliasId(defaultCard); setDescription('')
       onAdded(expense)
     } catch {
       setError('Could not add expense. Please try again.')
@@ -164,24 +165,28 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div className="group-field">
                 <label className="group-label">Paid by</label>
-                <select className="group-select" value={paidBy} onChange={e => setPaidBy(e.target.value)}>
-                  {members.map(m => (
-                    <option key={m.user_id} value={m.user_id}>
-                      {m.display_name}{m.user_id === currentUserId ? ' (You)' : ''}
-                    </option>
-                  ))}
-                </select>
+                <Dropdown
+                  value={paidBy}
+                  onChange={setPaidBy}
+                  options={members.map(m => ({
+                    value: m.user_id,
+                    label: `${m.display_name}${m.user_id === currentUserId ? ' (You)' : ''}`,
+                    icon: <User size={13} />,
+                  }))}
+                />
               </div>
               <div className="group-field">
                 <label className="group-label">Category</label>
-                <select className="group-select" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
-                  <option value="">— None —</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <CategoryDropdown value={categoryId} onChange={setCategoryId} />
               </div>
             </div>
+
+            {paidBy === currentUserId && (
+              <div className="group-field">
+                <label className="group-label">Card (optional)</label>
+                <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
+              </div>
+            )}
 
             {/* Split section */}
             <div className="group-field">

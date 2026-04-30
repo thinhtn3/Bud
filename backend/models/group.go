@@ -25,6 +25,7 @@ type GroupExpense struct {
 	GroupID     string    `gorm:"type:uuid;not null;index" json:"group_id"`
 	PaidBy      string    `gorm:"type:uuid;not null" json:"paid_by"`
 	CategoryID  *string   `gorm:"type:uuid" json:"category_id"`
+	CardAliasID *string   `gorm:"type:uuid" json:"card_alias_id"`
 	Name        string    `gorm:"not null" json:"name"`
 	Amount      float64   `gorm:"type:decimal(12,2);not null" json:"amount"`
 	Date        time.Time `gorm:"type:date;not null" json:"date"`
@@ -48,5 +49,6 @@ type GroupSettlement struct {
 	ToUserID   string    `gorm:"type:uuid;not null" json:"to_user_id"`   // who received
 	Amount     float64   `gorm:"type:decimal(12,2);not null" json:"amount"`
 	Date       time.Time `gorm:"type:date;not null" json:"date"`
+	Note       *string   `gorm:"type:text" json:"note"`
 	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
 }

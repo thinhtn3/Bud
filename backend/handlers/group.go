@@ -45,6 +45,7 @@ type createExpenseRequest struct {
 	Date        string       `json:"date" binding:"required"`
 	PaidBy      string       `json:"paid_by" binding:"required"`
 	CategoryID  *string      `json:"category_id"`
+	CardAliasID *string      `json:"card_alias_id"`
 	Description *string      `json:"description"`
 	Splits      []splitInput `json:"splits" binding:"required,min=1"`
 }
@@ -101,6 +102,7 @@ type settlementRecord struct {
 	ToDisplayName   string    `json:"to_display_name"`
 	Amount          float64   `json:"amount"`
 	Date            time.Time `json:"date"`
+	Note            *string   `json:"note"`
 }
 
 type balancesResponse struct {
@@ -508,6 +510,65 @@ func (h *GroupHandler) DeleteGroup(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// DELETE /api/groups/:id/members/me
+func (h *GroupHandler) LeaveGroup(c *gin.Context) {
+	userID := c.GetString("userID")
+	groupID := c.Param("id")
+
+	if !h.requireMember(c, groupID, userID) {
+		return
+	}
+
+	var group models.Group
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.CreatedBy == userID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "the group owner cannot leave; delete the group instead"})
+		return
+	}
+
+	if err := h.db.Where("group_id = ? AND user_id = ?", groupID, userID).Delete(&models.GroupMember{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not leave group"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// DELETE /api/groups/:id/members/:userId
+func (h *GroupHandler) RemoveMember(c *gin.Context) {
+	callerID := c.GetString("userID")
+	groupID := c.Param("id")
+	targetUserID := c.Param("userId")
+
+	if !h.requireMember(c, groupID, callerID) {
+		return
+	}
+
+	var group models.Group
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.CreatedBy != callerID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the group owner can remove members"})
+		return
+	}
+	if targetUserID == callerID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot remove yourself"})
+		return
+	}
+
+	if err := h.db.Where("group_id = ? AND user_id = ?", groupID, targetUserID).Delete(&models.GroupMember{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not remove member"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 // POST /api/groups/:id/expenses
 func (h *GroupHandler) CreateExpense(c *gin.Context) {
 	userID := c.GetString("userID")
@@ -563,6 +624,7 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 			GroupID:     groupID,
 			PaidBy:      req.PaidBy,
 			CategoryID:  req.CategoryID,
+			CardAliasID: req.CardAliasID,
 			Name:        req.Name,
 			Amount:      req.Amount,
 			Date:        date,
@@ -598,6 +660,7 @@ func (h *GroupHandler) CreateExpense(c *gin.Context) {
 			Amount:         req.Amount,
 			Date:           date,
 			CategoryID:     req.CategoryID,
+			CardAliasID:    req.CardAliasID,
 			Description:    req.Description,
 			GroupExpenseID: &expense.ID,
 			GroupMyShare:   &payerShare,
@@ -748,6 +811,8 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		ToUserID string  `json:"to_user_id" binding:"required"`
 		Amount   float64 `json:"amount" binding:"required,gt=0"`
 		Date     string  `json:"date"`
+		Note     *string `json:"note"`
+		Pardon   bool    `json:"pardon"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -769,26 +834,41 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		}
 	}
 
+	// For pardon: caller is the creditor forgiving the debtor.
+	// req.ToUserID = the debtor being pardoned.
+	// Settlement from = debtor, to = caller (creditor).
+	fromUser := userID
+	toUser := req.ToUserID
+	if req.Pardon {
+		fromUser = req.ToUserID
+		toUser = userID
+	}
+
 	var group models.Group
 	h.db.First(&group, "id = ?", groupID)
-	settlementName := "Settlement · " + group.Name
-	nameMap := h.buildNameMap(map[string]bool{userID: true, req.ToUserID: true})
+	nameMap := h.buildNameMap(map[string]bool{fromUser: true, toUser: true})
 
 	var s models.GroupSettlement
 	txErr := h.db.Transaction(func(tx *gorm.DB) error {
 		s = models.GroupSettlement{
 			GroupID:    groupID,
-			FromUserID: userID,
-			ToUserID:   req.ToUserID,
+			FromUserID: fromUser,
+			ToUserID:   toUser,
 			Amount:     req.Amount,
 			Date:       date,
+			Note:       req.Note,
 		}
 		if err := tx.Create(&s).Error; err != nil {
 			return err
 		}
-		// Payer (from_user) loses money — show as expense on their dashboard
+		// Pardon: no personal transactions — debt is simply forgiven
+		if req.Pardon {
+			return nil
+		}
+		// Normal settlement: create personal dashboard transactions
+		settlementName := "Settlement · " + group.Name
 		fromTx := models.Transaction{
-			UserID:            userID,
+			UserID:            fromUser,
 			Type:              models.TransactionTypeExpense,
 			Name:              settlementName,
 			Amount:            req.Amount,
@@ -798,9 +878,8 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		if err := tx.Create(&fromTx).Error; err != nil {
 			return err
 		}
-		// Recipient (to_user) gains money — show as reimbursement on their dashboard
 		toTx := models.Transaction{
-			UserID:            req.ToUserID,
+			UserID:            toUser,
 			Type:              models.TransactionTypeReimbursement,
 			Name:              settlementName,
 			Amount:            req.Amount,
@@ -822,6 +901,7 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 		ToDisplayName:   nameMap[s.ToUserID],
 		Amount:          s.Amount,
 		Date:            s.Date,
+		Note:            s.Note,
 	})
 }
 
@@ -947,6 +1027,7 @@ func (h *GroupHandler) GetBalances(c *gin.Context) {
 			ToDisplayName:   nameMap[s.ToUserID],
 			Amount:          s.Amount,
 			Date:            s.Date,
+			Note:            s.Note,
 		}
 	}
 

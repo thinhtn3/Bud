@@ -17,5 +17,6 @@ type Profile struct {
 	MonthlyIncome       *float64 `gorm:"type:decimal(12,2)" json:"monthly_income"`
 	Currency            string   `gorm:"type:text;default:'USD'" json:"currency"`
 	FinancialGoals      string   `gorm:"type:text;not null;default:'[]'" json:"-"` // stored as JSON array string
+	DefaultCardAliasID  *string  `gorm:"type:uuid" json:"default_card_alias_id"`
 	UpdatedAt           time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

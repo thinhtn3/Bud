@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '@/context/AuthContext'
-import { CreditCard, Plus, Trash2, Edit2, X, Check } from 'lucide-react'
+import { api } from '@/lib/api'
+import { CreditCard, Plus, Trash2, Edit2, X, Star } from 'lucide-react'
 import { getCardNetworkIcon } from '@/components/widgets/CardAliasDropdown'
 
 interface Props {
@@ -16,12 +17,14 @@ const CARD_TYPES = ['credit', 'debit', 'prepaid', 'other'] as const
 const CARD_COLORS = ['#9fe870', '#d03238', '#5e6ad2', '#ffd11a', '#2dd4bf', '#f7f8f8', '#8a8f98']
 
 export function PreferencesModal({ onClose }: Props) {
-  const { user, addCardAlias, updateCardAlias, deleteCardAlias } = useAuth()
+  const { user, refreshUser, addCardAlias, updateCardAlias, deleteCardAlias } = useAuth()
 
-  const [period, setPeriod]     = useState<Period>('monthly')
-  const [amount, setAmount]     = useState('')
-  const [carryOver, setCarryOver] = useState(false)
-  const [income, setIncome]     = useState('')
+  const [period, setPeriod]         = useState<Period>('monthly')
+  const [amount, setAmount]         = useState('')
+  const [carryOver, setCarryOver]   = useState(false)
+  const [income, setIncome]         = useState('')
+  const [defaultCardId, setDefaultCardId] = useState<string>('')
+  const [saving, setSaving]         = useState(false)
 
   // Card Alias Form State
   const [showCardForm, setShowCardForm] = useState(false)
@@ -42,6 +45,7 @@ export function PreferencesModal({ onClose }: Props) {
     setAmount(p.budget_amount > 0 ? String(p.budget_amount) : '')
     setCarryOver(p.carry_over_excess)
     setIncome(p.monthly_income != null ? String(p.monthly_income) : '')
+    setDefaultCardId(p.default_card_alias_id ?? '')
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Escape to close
@@ -53,9 +57,25 @@ export function PreferencesModal({ onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  function handleSave() {
-    // TODO: wire up api.put('/api/me/preferences', { budget_period: period, budget_amount: Number(amount), carry_over_excess: carryOver, monthly_income: income ? Number(income) : null, ... }) + refreshUser()
-    onClose()
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await api.put('/api/me/preferences', {
+        financial_goals: user?.preferences?.financial_goals ?? [],
+        budget_period: period,
+        budget_amount: Number(amount) || 0,
+        carry_over_excess: carryOver,
+        monthly_income: income ? Number(income) : null,
+        currency: user?.preferences?.currency ?? 'USD',
+        default_card_alias_id: defaultCardId || null,
+      })
+      await refreshUser()
+      onClose()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleCardSubmit(e: React.FormEvent) {
@@ -110,6 +130,7 @@ export function PreferencesModal({ onClose }: Props) {
     if (!window.confirm('Delete this card alias?')) return
     try {
       await deleteCardAlias(id)
+      if (defaultCardId === id) setDefaultCardId('')
     } catch (err) {
       console.error(err)
     }
@@ -125,7 +146,7 @@ export function PreferencesModal({ onClose }: Props) {
         role="dialog"
         aria-modal
         aria-label="Preferences"
-        style={{ maxWidth: 460 }}
+        style={{ maxWidth: 560 }}
       >
         <div className="bud-modal-header">
           <span className="bud-modal-title">Preferences & Cards</span>
@@ -285,6 +306,13 @@ export function PreferencesModal({ onClose }: Props) {
                         </div>
                       </div>
                       <div className="bud-card-actions">
+                        <button
+                          className={`bud-card-action-btn${defaultCardId === card.id ? ' bud-card-action-btn--default' : ''}`}
+                          onClick={() => setDefaultCardId(defaultCardId === card.id ? '' : card.id)}
+                          title={defaultCardId === card.id ? 'Remove default' : 'Set as default'}
+                        >
+                          <Star size={13} fill={defaultCardId === card.id ? 'currentColor' : 'none'} />
+                        </button>
                         <button className="bud-card-action-btn" onClick={() => handleEditCard(card)}><Edit2 size={13} /></button>
                         <button className="bud-card-action-btn delete" onClick={() => handleDeleteCard(card.id)}><Trash2 size={13} /></button>
                       </div>
@@ -322,7 +350,9 @@ export function PreferencesModal({ onClose }: Props) {
 
         <div className="bud-modal-actions" style={{ marginTop: 24 }}>
           <button type="button" className="bud-prefs-cancel" onClick={onClose}>Cancel</button>
-          <button type="button" className="bud-modal-save" onClick={handleSave}>Save</button>
+          <button type="button" className="bud-modal-save" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </button>
         </div>
       </div>
     </div>,

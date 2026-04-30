@@ -94,8 +94,8 @@ export const budStyles = `
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 20px;
-    padding-bottom: 24px;
+    margin-bottom: 14px;
+    padding-bottom: 16px;
     border-bottom: 1px solid rgba(255,255,255,0.05);
     max-width: 1280px;
   }
@@ -158,24 +158,23 @@ export const budStyles = `
   }
   .bud-greeting {
     font-size: 13px;
-    font-weight: 510;
-    color: #8a8f98;
-    letter-spacing: -0.13px;
-    margin-bottom: 4px;
-  }
-  .bud-name {
-    font-size: 32px;
-    font-weight: 510;
-    color: #f7f8f8;
-    letter-spacing: -0.704px;
-    line-height: 1.13;
-  }
-  .bud-email {
-    font-size: 13px;
     font-weight: 400;
     color: #62666d;
     letter-spacing: -0.13px;
-    margin-top: 3px;
+  }
+  .bud-name {
+    font-size: 16px;
+    font-weight: 590;
+    color: #f7f8f8;
+    letter-spacing: -0.32px;
+    line-height: 1.3;
+  }
+  .bud-email {
+    font-size: 12px;
+    font-weight: 400;
+    color: #4a4f57;
+    letter-spacing: -0.13px;
+    margin-top: 2px;
   }
   .bud-signout {
     background: rgba(255,255,255,0.02);
@@ -220,7 +219,6 @@ export const budStyles = `
     .bud-widget-grid { max-width: 100%; }
     .bud-header { max-width: 100%; }
     .bud-stat-amount { font-size: 22px; }
-    .bud-name { font-size: 26px; }
   }
   @media (max-width: 1024px) {
     .bud-root { padding: 24px 20px; }
@@ -523,6 +521,47 @@ export const budStyles = `
   @keyframes bud-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.45; }
+  }
+
+  /* ── Skeleton primitives ──────────────────────────────── */
+  .bud-skel {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    animation: bud-pulse 1.5s ease-in-out infinite;
+  }
+  .bud-skel-circle {
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    animation: bud-pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .bud-skel-text {
+    height: 11px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    animation: bud-pulse 1.5s ease-in-out infinite;
+  }
+  .bud-skel-heading {
+    height: 18px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    animation: bud-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* ── Widget Skeleton wrapper ──────────────────────────── */
+  .bud-widget-skel {
+    padding: 20px;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .bud-widget-skel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
   }
 
   /* ── Quick Add Widget ─────────────────────────────────── */
@@ -838,9 +877,10 @@ export const budStyles = `
     border-radius: 9999px;
     pointer-events: none;
     transition:
-      transform      0.26s cubic-bezier(0.34, 1.20, 0.64, 1),
+      transform        0.26s cubic-bezier(0.34, 1.20, 0.64, 1),
       background-color 0.22s ease;
   }
+  /* 2-option toggle positions */
   .bud-toggle[data-active="expense"] .bud-toggle-thumb {
     transform: translateX(0%);
     background: #d03238;
@@ -855,6 +895,26 @@ export const budStyles = `
     transform: translateX(100%);
     background: #2dd4bf;
     box-shadow: 0 2px 10px rgba(45,212,191,0.28);
+  }
+
+  /* 3-option toggle — thumb is 1/3 wide, slots at 0 / 100% / 200% */
+  .bud-toggle--three .bud-toggle-thumb {
+    width: calc(33.333% - 2px);
+  }
+  .bud-toggle--three[data-active="expense"] .bud-toggle-thumb {
+    transform: translateX(0%);
+    background: #d03238;
+    box-shadow: 0 2px 10px rgba(208,50,56,0.35);
+  }
+  .bud-toggle--three[data-active="reimbursement"] .bud-toggle-thumb {
+    transform: translateX(100%);
+    background: #2dd4bf;
+    box-shadow: 0 2px 10px rgba(45,212,191,0.28);
+  }
+  .bud-toggle--three[data-active="income"] .bud-toggle-thumb {
+    transform: translateX(200%);
+    background: #9fe870;
+    box-shadow: 0 2px 10px rgba(159,232,112,0.28);
   }
 
   .bud-toggle-btn {
@@ -885,7 +945,9 @@ export const budStyles = `
   .bud-toggle[data-active="expense"]       .bud-toggle-btn[data-value="income"]:hover         { color: #d0d6e0; }
   .bud-toggle[data-active="expense"]       .bud-toggle-btn[data-value="reimbursement"]:hover  { color: #d0d6e0; }
   .bud-toggle[data-active="income"]        .bud-toggle-btn[data-value="expense"]:hover        { color: #d0d6e0; }
+  .bud-toggle[data-active="income"]        .bud-toggle-btn[data-value="reimbursement"]:hover  { color: #d0d6e0; }
   .bud-toggle[data-active="reimbursement"] .bud-toggle-btn[data-value="expense"]:hover        { color: #d0d6e0; }
+  .bud-toggle[data-active="reimbursement"] .bud-toggle-btn[data-value="income"]:hover         { color: #d0d6e0; }
 
   /* ── Form ─────────────────────────────────────────────── */
   .bud-form { display: flex; flex-direction: column; gap: 10px; }
@@ -895,7 +957,7 @@ export const budStyles = `
     width: 100%;
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 6px;
+    border-radius: 10px;
     padding: 10px 14px;
     font-size: 14px;
     line-height: 1.42857;
@@ -1578,7 +1640,7 @@ export const budStyles = `
     border-radius: 16px;
     padding: 24px;
     width: 100%;
-    max-width: 400px;
+    max-width: 560px;
     position: relative;
     animation: bud-modal-in 0.18s cubic-bezier(0.32,0.72,0,1);
     box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.4);
@@ -1825,6 +1887,16 @@ export const budStyles = `
     color: #d03238;
     border-color: rgba(208,50,56,0.25);
   }
+  .bud-card-action-btn--default {
+    background: rgba(255,209,26,0.1);
+    color: #ffd11a;
+    border-color: rgba(255,209,26,0.25);
+  }
+  .bud-card-action-btn--default:hover {
+    background: rgba(255,209,26,0.16);
+    color: #ffd11a;
+    border-color: rgba(255,209,26,0.38);
+  }
 
   .bud-card-form {
     display: flex;
@@ -2039,5 +2111,70 @@ export const budStyles = `
   .bud-nav-signout-btn:hover {
     color: #8a8f98;
     background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* ── Floating action button ───────────────────────────── */
+  .bud-fab {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #9fe870;
+    color: #163300;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(159,232,112,0.30), 0 2px 8px rgba(0,0,0,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 400;
+  }
+  .bud-fab:hover {
+    transform: scale(1.07);
+    box-shadow: 0 6px 32px rgba(159,232,112,0.40), 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .bud-fab:active { transform: scale(0.96); }
+
+  /* ── Add transaction modal — success state ────────────── */
+  .bud-add-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0 4px;
+    text-align: center;
+  }
+  .bud-add-success-check { color: #9fe870; }
+  .bud-add-success-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #c8cdd6;
+    margin-bottom: 8px;
+  }
+  .bud-add-success .bud-modal-actions { width: 100%; }
+
+  /* ── Modal secondary (Done) button ───────────────────── */
+  .bud-modal-secondary {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    color: #8a8f98;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 9999px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 510;
+    font-feature-settings: "cv01","ss03";
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .bud-modal-secondary:hover {
+    background: rgba(255,255,255,0.07);
+    color: #c8cdd6;
   }
 `

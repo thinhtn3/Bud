@@ -52,6 +52,7 @@ export interface GroupExpense {
   paid_by_name: string
   category_id: string | null
   category_name: string | null
+  card_alias_id: string | null
   name: string
   amount: number
   date: string
@@ -82,6 +83,7 @@ export interface SettlementRecord {
   to_display_name: string
   amount: number
   date: string
+  note?: string
 }
 
 export interface GroupBalances {

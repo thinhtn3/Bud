@@ -5,6 +5,7 @@ import type { Transaction } from '@/types'
 import { CategoryDropdown } from '@/components/widgets/CategoryDropdown'
 import { getCategoryIcon } from '@/components/widgets/categoryIcons'
 import { TagIcon } from 'lucide-react'
+import { WidgetSkeleton } from './WidgetSkeleton'
 
 interface QuickAddData {
   recurring: Transaction[]
@@ -111,7 +112,7 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
       <p className="bud-widget-label">Quick Add</p>
 
       {loading ? (
-        <p className="bud-tx-loading">Loading shortcuts…</p>
+        <WidgetSkeleton type="quick_add" size={isSmall ? 'small' : 'medium'} />
       ) : isEmpty ? (
         <p className="bud-tx-empty">
           Add a few transactions to unlock one-tap shortcuts here.

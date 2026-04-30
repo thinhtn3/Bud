@@ -25,12 +25,19 @@ interface SettleModalProps {
   toDisplayName: string
   defaultAmount: number
   groupId: string
+  pardon?: boolean
   onSettled: (record: SettlementRecord) => void
   onClose: () => void
 }
 
-function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, onSettled, onClose }: SettleModalProps) {
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, pardon, onSettled, onClose }: SettleModalProps) {
   const [amount, setAmount] = useState(defaultAmount.toFixed(2))
+  const [note, setNote] = useState('')
+  const [date, setDate] = useState(todayStr())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -42,6 +49,9 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, onSettle
       const record = await api.post<SettlementRecord>(`/api/groups/${groupId}/settlements`, {
         to_user_id: toUserID,
         amount: parseFloat(amount),
+        date,
+        ...(note.trim() ? { note: note.trim() } : {}),
+        ...(pardon ? { pardon: true } : {}),
       })
       onSettled(record)
     } catch {
@@ -56,26 +66,47 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, onSettle
       <style>{groupStyles}</style>
       <div className="group-modal-overlay" onClick={onClose}>
         <div className="group-modal group-root" onClick={e => e.stopPropagation()}>
-          <div className="group-modal-title">Pay {toDisplayName}</div>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="group-modal-title">{pardon ? `Pardon ${toDisplayName}` : `Settle up with ${toDisplayName}`}</div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="group-field">
+                <label className="group-label">Amount</label>
+                <input
+                  className="group-input"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="group-field">
+                <label className="group-label">Date</label>
+                <input
+                  className="group-input"
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
             <div className="group-field">
-              <label className="group-label">Amount</label>
+              <label className="group-label">Note (optional)</label>
               <input
                 className="group-input"
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                autoFocus
-                required
+                placeholder="e.g. Venmo'd, Cash at dinner…"
+                value={note}
+                onChange={e => setNote(e.target.value)}
               />
             </div>
             {error && <div className="group-error">{error}</div>}
             <div className="group-modal-footer">
               <button type="button" className="group-btn-secondary" onClick={onClose}>Cancel</button>
               <button type="submit" className="group-btn-primary" disabled={loading || !amount}>
-                {loading ? 'Recording…' : 'Confirm payment'}
+                {loading ? 'Recording…' : pardon ? 'Confirm pardon' : 'Confirm payment'}
               </button>
             </div>
           </form>
@@ -167,24 +198,8 @@ function DeleteSettlementModal({ settlement, groupId, onDeleted, onClose }: Dele
 
 export default function BalancesPanel({ balances, currentUserId, groupId, onSettled, onSettlementDeleted }: Props) {
   const { net_balances, settlements, history } = balances
-  const [settling, setSettling] = useState<{ toUserID: string; toDisplayName: string; amount: number } | null>(null)
-  const [payingFullId, setPayingFullId] = useState<string | null>(null)
+  const [settling, setSettling] = useState<{ toUserID: string; toDisplayName: string; amount: number; pardon?: boolean } | null>(null)
   const [deletingSettlement, setDeletingSettlement] = useState<SettlementRecord | null>(null)
-
-  async function payInFull(toUserID: string, toDisplayName: string, amount: number) {
-    setPayingFullId(toUserID)
-    try {
-      const record = await api.post<SettlementRecord>(`/api/groups/${groupId}/settlements`, {
-        to_user_id: toUserID,
-        amount,
-      })
-      onSettled(record)
-    } catch {
-      // silently fail — user can try custom
-    } finally {
-      setPayingFullId(null)
-    }
-  }
 
   function balanceClass(b: number) {
     if (b > 0.005) return 'positive'
@@ -236,8 +251,9 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
             )}
             {settlements.map((s, i) => {
               const isYou = s.from_user_id === currentUserId
+              const owedToYou = s.to_user_id === currentUserId
               return (
-                <div key={i} className={`group-settlement-row${isYou ? ' involves-you' : ''}`}>
+                <div key={i} className={`group-settlement-row${isYou || owedToYou ? ' involves-you' : ''}`}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
                     <span className="group-settlement-from">{s.from_display_name || 'Unknown'}</span>
                     <span style={{ color: 'rgba(247,248,248,0.35)' }}>pays</span>
@@ -249,17 +265,20 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
                       <button
                         className="group-btn-primary"
                         style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
-                        disabled={payingFullId === s.to_user_id}
-                        onClick={() => payInFull(s.to_user_id, s.to_display_name, s.amount)}
-                      >
-                        {payingFullId === s.to_user_id ? '…' : 'Pay in full'}
-                      </button>
-                      <button
-                        className="group-btn-secondary"
-                        style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
                         onClick={() => setSettling({ toUserID: s.to_user_id, toDisplayName: s.to_display_name, amount: s.amount })}
                       >
-                        Custom
+                        Settle up
+                      </button>
+                    </div>
+                  )}
+                  {owedToYou && (
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button
+                        className="group-btn-ghost"
+                        style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7, color: 'rgba(247,248,248,0.5)' }}
+                        onClick={() => setSettling({ toUserID: s.from_user_id, toDisplayName: s.from_display_name, amount: s.amount, pardon: true })}
+                      >
+                        Pardon
                       </button>
                     </div>
                   )}
@@ -287,21 +306,28 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
                 fontSize: 12,
                 color: 'rgba(247,248,248,0.5)',
               }}>
-                <span style={{ fontWeight: 600, color: h.from_user_id === currentUserId ? '#ff6b6b' : 'rgba(247,248,248,0.7)' }}>
-                  {h.from_display_name}
-                </span>
-                <span>paid</span>
-                <span style={{ fontWeight: 600, color: h.to_user_id === currentUserId ? '#9fe870' : 'rgba(247,248,248,0.7)' }}>
-                  {h.to_display_name}
-                </span>
-                <span style={{ marginLeft: 'auto', fontWeight: 600, color: 'rgba(247,248,248,0.6)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 600, color: h.from_user_id === currentUserId ? '#ff6b6b' : 'rgba(247,248,248,0.7)' }}>
+                      {h.from_display_name}
+                    </span>
+                    <span>paid</span>
+                    <span style={{ fontWeight: 600, color: h.to_user_id === currentUserId ? '#9fe870' : 'rgba(247,248,248,0.7)' }}>
+                      {h.to_display_name}
+                    </span>
+                  </div>
+                  {h.note && (
+                    <span style={{ fontSize: 11, color: 'rgba(247,248,248,0.3)', fontStyle: 'italic' }}>{h.note}</span>
+                  )}
+                </div>
+                <span style={{ fontWeight: 600, color: 'rgba(247,248,248,0.6)', flexShrink: 0 }}>
                   {fmt(h.amount)}
                 </span>
-                <span style={{ color: 'rgba(247,248,248,0.25)' }}>{formatDate(h.date)}</span>
+                <span style={{ color: 'rgba(247,248,248,0.25)', flexShrink: 0 }}>{formatDate(h.date)}</span>
                 {h.from_user_id === currentUserId && (
                   <button
                     className="group-btn-danger"
-                    style={{ fontSize: 11, padding: '3px 10px' }}
+                    style={{ fontSize: 11, padding: '3px 10px', flexShrink: 0 }}
                     onClick={() => setDeletingSettlement(h)}
                   >
                     Delete
@@ -319,6 +345,7 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
           toDisplayName={settling.toDisplayName}
           defaultAmount={settling.amount}
           groupId={groupId}
+          pardon={settling.pardon}
           onSettled={record => { onSettled(record); setSettling(null) }}
           onClose={() => setSettling(null)}
         />
