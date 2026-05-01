@@ -214,6 +214,11 @@ export const budStyles = `
     transition: transform 0.2s cubic-bezier(0.32,0.72,0,1), opacity 0.2s;
   }
 
+  /* Mobile nav elements — hidden on desktop, shown via mobile media query below */
+  .bud-mobile-nav-toggle,
+  .bud-mobile-nav-panel,
+  .bud-mobile-nav-backdrop { display: none; }
+
   @media (max-width: 1400px) {
     .bud-root { padding: 32px; }
     .bud-widget-grid { max-width: 100%; }
@@ -226,11 +231,80 @@ export const budStyles = `
     .bud-widget-cell.size-large { grid-column: span 2; }
   }
   @media (max-width: 640px) {
-    .bud-root { padding: 20px 16px; }
-    .bud-widget-grid { grid-template-columns: 1fr; gap: 12px; }
-    .bud-widget-cell.size-small,
+    .bud-root { padding: 20px 16px !important; }
+    .bud-widget-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .bud-widget-cell.size-small  { grid-column: span 1; }
     .bud-widget-cell.size-medium,
-    .bud-widget-cell.size-large { grid-column: span 1; }
+    .bud-widget-cell.size-large  { grid-column: span 2; }
+
+    /* Hide desktop sidebar */
+    .bud-navbar { display: none !important; }
+
+    /* Backdrop */
+    .bud-mobile-nav-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 49;
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    /* Toggle button — bottom left, away from FAB (bottom right) */
+    .bud-mobile-nav-toggle {
+      display: flex;
+      position: fixed;
+      bottom: 24px;
+      left: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #1a1b1e;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #d0d6e0;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 51;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+      transition: background 100ms ease;
+    }
+    .bud-mobile-nav-toggle:hover { background: #222428; }
+
+    /* Floating nav panel — appears above toggle */
+    .bud-mobile-nav-panel {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      bottom: 80px;
+      left: 20px;
+      width: 210px;
+      background: #13141a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 6px;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px) scale(0.97);
+      transform-origin: bottom left;
+      transition: opacity 150ms ease, transform 150ms ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+    }
+    .bud-mobile-nav-panel.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Profile row inside mobile panel */
+    .bud-mobile-nav-profile-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      margin-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
   }
 
   /* ── Edit mode ────────────────────────────────────────── */
