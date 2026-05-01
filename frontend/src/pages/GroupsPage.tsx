@@ -46,7 +46,7 @@ export default function GroupsPage() {
       <style>{budStyles}</style>
       <style>{groupStyles}</style>
       <Navbar />
-      <div className="bud-root group-root" style={{ paddingLeft: 220 }}>
+      <div className="bud-root group-root" style={{ paddingLeft: 'var(--desktop-nav-offset, 220px)' }}>
         {/* Background blobs */}
         <div className="bud-bg-blob bud-bg-blob-1" />
         <div className="bud-bg-blob bud-bg-blob-2" />

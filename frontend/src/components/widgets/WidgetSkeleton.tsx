@@ -123,9 +123,9 @@ function QuickAddSkeleton({ size }: { size: WidgetSize }) {
     return (
       <div className="bud-widget-skel">
         <SkelHeader short />
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[...Array(4)].map((_, i) => (
-            <Skel key={i} w={80} h={34} r={20} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflow: 'hidden' }}>
+          {[...Array(5)].map((_, i) => (
+            <Skel key={i} w="100%" h={28} r={8} />
           ))}
         </div>
       </div>

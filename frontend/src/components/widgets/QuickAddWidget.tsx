@@ -75,9 +75,9 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
   const isEmpty = !data || (data.recurring.length === 0 && data.recent.length === 0)
   const isSmall = size === 'small'
 
-  // Small: show up to 4 chips total (recurring first), no section labels, horizontal layout
+  // Small: show up to 8 chips total (recurring first), no section labels, horizontal layout
   const smallChips = isSmall
-    ? [...(data?.recurring ?? []), ...(data?.recent ?? [])].slice(0, 4)
+    ? [...(data?.recurring ?? []), ...(data?.recent ?? [])].slice(0, 8)
     : null
 
   function renderChip(tx: Transaction) {
@@ -109,7 +109,7 @@ export function QuickAddWidget({ onAdd, size = 'default' }: Props) {
 
   return (
     <div className={`bud-widget${isSmall ? ' bud-qa-widget--small' : ''}`}>
-      <p className="bud-widget-label">Quick Add</p>
+      <p className="bud-widget-label" style={{ marginBottom: 12 }}>Quick Add</p>
 
       {loading ? (
         <WidgetSkeleton type="quick_add" size={isSmall ? 'small' : 'medium'} />

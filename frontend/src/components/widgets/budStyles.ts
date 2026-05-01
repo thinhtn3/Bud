@@ -41,6 +41,7 @@ export const budStyles = `
     box-sizing: border-box;
     width: 100%;
     overflow-x: clip;
+    --desktop-nav-offset: 220px;
   }
 
   /* ── Background blobs (fixed so they stay put on scroll) ─ */
@@ -228,9 +229,12 @@ export const budStyles = `
     .bud-widget-grid { grid-template-columns: repeat(2, 1fr); }
     .bud-widget-cell.size-large { grid-column: span 2; }
   }
+  /* Mobile styles */
   @media (max-width: 640px) {
-    /* Remove desktop sidebar offset, add bottom padding for tab bar */
-    .bud-root { padding: 20px 16px 96px !important; }
+    .bud-root { 
+      padding: 20px 16px 96px !important; 
+      --desktop-nav-offset: 0px;
+    }
     .bud-widget-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .bud-widget-cell.size-small  { grid-column: span 1; }
     .bud-widget-cell.size-medium,
@@ -282,6 +286,34 @@ export const budStyles = `
       letter-spacing: -0.1px;
       font-feature-settings: "cv01", "ss03";
     }
+
+    /* All widgets: even vertical spacing on mobile */
+    .bud-widget {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    .bud-widget-label { font-size: 10px; margin-bottom: 12px; }
+
+    /* QuickAdd: small variant on mobile (half-row ~165px) */
+    .bud-qa-widget--small { padding: 14px 12px 12px; }
+    .bud-qa-chips--inline {
+      flex-direction: column;
+      overflow-x: visible;
+      gap: 4px;
+    }
+    .bud-qa-chips--inline .bud-qa-chip { padding: 4px 8px; gap: 5px; flex-shrink: 1; }
+    .bud-qa-chips--inline .bud-qa-chip-icon { width: 18px; height: 18px; }
+    .bud-qa-chips--inline .bud-qa-chip-name { font-size: 11px; max-width: none; }
+    .bud-qa-chips--inline .bud-qa-chip-amt { display: block; font-size: 11px; }
+
+    /* Scale down large stat values for mobile consistency */
+    .bud-stat-amount { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+    .bud-stat-row--vertical .bud-stat-amount { font-size: 14px; }
+    .bud-inco-amount { font-size: 14px; }
+    .bud-widget-title { font-size: 15px; }
+    .bud-stat-sub { font-size: 11px; }
   }
 
   /* ── Edit mode ────────────────────────────────────────── */
@@ -727,15 +759,18 @@ export const budStyles = `
     gap: 9px;
   }
   .bud-cat-row {
-    display: grid;
-    grid-template-columns: 88px 1fr 42px;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 8px;
+    width: 100%;
   }
   .bud-cat-row-label {
     display: flex;
     align-items: center;
     gap: 5px;
+    flex-shrink: 0;
+    max-width: 45%;
     min-width: 0;
   }
   .bud-cat-row-emoji {
@@ -753,6 +788,7 @@ export const budStyles = `
     text-overflow: ellipsis;
   }
   .bud-cat-row-bar-track {
+    flex: 1;
     height: 5px;
     border-radius: 99px;
     background: rgba(255,255,255,0.05);
@@ -764,6 +800,7 @@ export const budStyles = `
     transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .bud-cat-row-amount {
+    flex-shrink: 0;
     font-size: 11px;
     font-weight: 700;
     color: #d0d6e0;
@@ -774,30 +811,46 @@ export const budStyles = `
   }
 
   /* ── Quick Add small variant ──────────────────────────── */
-  .bud-qa-widget--small { padding: 16px 18px; }
+  .bud-qa-widget--small { padding: 24px 18px 16px; }
   .bud-qa-widget--small .bud-widget-label { margin-bottom: 10px; }
 
   .bud-qa-chips--inline {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 5px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-y: auto;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+    padding-right: 2px; /* Slight breathing room for scroll */
+    flex: 1;
+    min-height: 0;
+    max-height: 172px; /* Show exactly 5 items at a time */
+  }
+  .bud-qa-chips--inline::-webkit-scrollbar {
+    display: none;
   }
   .bud-qa-chips--inline .bud-qa-chip {
-    padding: 5px 10px;
-    gap: 6px;
-    flex: none;
+    flex-shrink: 0;
+    padding: 5px 8px;
+    gap: 5px;
+    justify-content: flex-start;
+    border-radius: 6px;
   }
   .bud-qa-chips--inline .bud-qa-chip-name {
-    font-size: 12px;
-    max-width: 90px;
+    font-size: 10px;
+    max-width: none;
+    text-align: left;
+    flex: 1;
   }
   .bud-qa-chips--inline .bud-qa-chip-amt {
-    font-size: 11px;
+    font-size: 10px;
+    margin-left: auto;
   }
   .bud-qa-chips--inline .bud-qa-chip-category { display: none; }
   .bud-qa-chips--inline .bud-qa-chip-icon {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     border-radius: 4px;
   }
 
@@ -905,7 +958,7 @@ export const budStyles = `
   }
   @media (max-width: 640px) {
     .bud-stat-row { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .bud-stat-amount { font-size: 22px; }
+    .bud-stat-amount { font-size: 16px; }
   }
 
   /* ── Type Toggle ──────────────────────────────────────── */

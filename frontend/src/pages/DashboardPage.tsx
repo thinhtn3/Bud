@@ -233,7 +233,7 @@ export default function DashboardPage() {
     <>
       <style>{budStyles}</style>
       <Navbar />
-      <div className="bud-root" style={{ paddingLeft: 220 }}>
+      <div className="bud-root" style={{ paddingLeft: 'var(--desktop-nav-offset, 220px)' }}>
         <div className="bud-bg-blob bud-bg-blob-1" />
         <div className="bud-bg-blob bud-bg-blob-2" />
         <div className="bud-bg-blob bud-bg-blob-3" />
