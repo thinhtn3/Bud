@@ -214,10 +214,8 @@ export const budStyles = `
     transition: transform 0.2s cubic-bezier(0.32,0.72,0,1), opacity 0.2s;
   }
 
-  /* Mobile nav elements — hidden on desktop, shown via mobile media query below */
-  .bud-mobile-nav-toggle,
-  .bud-mobile-nav-panel,
-  .bud-mobile-nav-backdrop { display: none; }
+  /* Mobile bottom nav — hidden on desktop */
+  .bud-bottom-nav { display: none; }
 
   @media (max-width: 1400px) {
     .bud-root { padding: 32px; }
@@ -231,7 +229,8 @@ export const budStyles = `
     .bud-widget-cell.size-large { grid-column: span 2; }
   }
   @media (max-width: 640px) {
-    .bud-root { padding: 20px 16px !important; }
+    /* Remove desktop sidebar offset, add bottom padding for tab bar */
+    .bud-root { padding: 20px 16px 96px !important; }
     .bud-widget-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .bud-widget-cell.size-small  { grid-column: span 1; }
     .bud-widget-cell.size-medium,
@@ -240,70 +239,48 @@ export const budStyles = `
     /* Hide desktop sidebar */
     .bud-navbar { display: none !important; }
 
-    /* Backdrop */
-    .bud-mobile-nav-backdrop {
-      display: block;
-      position: fixed;
-      inset: 0;
-      z-index: 49;
-      background: rgba(0, 0, 0, 0.35);
-    }
+    /* Lift FAB above the bottom tab bar */
+    .bud-fab { bottom: 88px; }
 
-    /* Toggle button — bottom left, away from FAB (bottom right) */
-    .bud-mobile-nav-toggle {
+    /* Bottom tab bar */
+    .bud-bottom-nav {
       display: flex;
       position: fixed;
-      bottom: 24px;
-      left: 20px;
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: #1a1b1e;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #d0d6e0;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 51;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
-      transition: background 100ms ease;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: #0f1011;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      z-index: 50;
+      padding-bottom: env(safe-area-inset-bottom);
     }
-    .bud-mobile-nav-toggle:hover { background: #222428; }
-
-    /* Floating nav panel — appears above toggle */
-    .bud-mobile-nav-panel {
+    .bud-bottom-nav-item {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      position: fixed;
-      bottom: 80px;
-      left: 20px;
-      width: 210px;
-      background: #13141a;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 6px;
-      z-index: 50;
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(8px) scale(0.97);
-      transform-origin: bottom left;
-      transition: opacity 150ms ease, transform 150ms ease;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #4a4f57;
+      transition: color 100ms ease;
     }
-    .bud-mobile-nav-panel.open {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateY(0) scale(1);
+    .bud-bottom-nav-item--active {
+      color: #f7f8f8;
     }
-
-    /* Profile row inside mobile panel */
-    .bud-mobile-nav-profile-row {
+    .bud-bottom-nav-icon {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 8px;
-      margin-top: 4px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      justify-content: center;
+    }
+    .bud-bottom-nav-label {
+      font-size: 11px;
+      font-weight: 510;
+      letter-spacing: -0.1px;
+      font-feature-settings: "cv01", "ss03";
     }
   }
 
