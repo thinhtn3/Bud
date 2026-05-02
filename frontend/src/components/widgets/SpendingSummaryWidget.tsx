@@ -1,16 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import type { Transaction } from '@/types'
 import { parseLocalDate } from '@/lib/dateUtils'
 import { WidgetSkeleton } from './WidgetSkeleton'
 
 type Period = 'weekly' | 'biweekly' | 'monthly'
 type View   = 'net' | 'gross'
-
-const PERIODS: { key: Period; label: string }[] = [
-  { key: 'weekly',   label: 'Weekly'   },
-  { key: 'biweekly', label: 'Biweekly' },
-  { key: 'monthly',  label: 'Monthly'  },
-]
 
 const VIEWS: { key: View; label: string }[] = [
   { key: 'net',   label: 'Net'   },
@@ -88,11 +82,6 @@ function periodLabel(period: Period, year: number, month: number): string {
   return `${starts[week - 1]}–${ends[week - 1]}`
 }
 
-function toPeriod(pref: string): Period {
-  if (pref === 'weekly' || pref === 'biweekly' || pref === 'monthly') return pref
-  return 'monthly'
-}
-
 interface Props {
   transactions: Transaction[]
   allTransactions: Transaction[]
@@ -102,19 +91,11 @@ interface Props {
   budgetPeriod?: string
   viewYear: number
   viewMonth: number
+  period: Period
 }
 
-export function SpendingSummaryWidget({ transactions, loading, size = 'medium', budgetAmount, budgetPeriod, viewYear, viewMonth }: Props) {
-  const [period, setPeriod] = useState<Period>('monthly')
-  const [view,   setView]   = useState<View>('net')
-  const periodSeeded = useRef(false)
-
-  useEffect(() => {
-    if (!periodSeeded.current && budgetPeriod) {
-      periodSeeded.current = true
-      setPeriod(toPeriod(budgetPeriod))
-    }
-  }, [budgetPeriod])
+export function SpendingSummaryWidget({ transactions, loading, size = 'medium', budgetAmount, budgetPeriod, viewYear, viewMonth, period }: Props) {
+  const [view, setView] = useState<View>('net')
 
   if (loading) {
     return <WidgetSkeleton type="spending_summary" size={size} />
@@ -147,22 +128,12 @@ export function SpendingSummaryWidget({ transactions, loading, size = 'medium', 
   return (
     <div className="bud-stat-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Toggles */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div className="bud-period-chips">
-          {PERIODS.map(p => (
-            <button key={p.key} className={`bud-period-chip ${period === p.key ? 'active' : ''}`} onClick={() => setPeriod(p.key)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <div className="bud-period-chips">
-          {VIEWS.map(v => (
-            <button key={v.key} className={`bud-period-chip ${view === v.key ? 'active' : ''}`} onClick={() => setView(v.key)}>
-              {v.label}
-            </button>
-          ))}
-        </div>
+      <div className="bud-period-chips">
+        {VIEWS.map(v => (
+          <button key={v.key} className={`bud-period-chip ${view === v.key ? 'active' : ''}`} onClick={() => setView(v.key)}>
+            {v.label}
+          </button>
+        ))}
       </div>
 
       {/* Spending (left) + Income/Reimbursed (right) */}

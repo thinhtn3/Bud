@@ -137,139 +137,144 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
     <>
       <style>{groupStyles}</style>
       <div className="group-modal-overlay" onClick={onClose}>
-        <div className="group-modal group-root" onClick={e => e.stopPropagation()}>
-          <div className="group-modal-title">Add expense</div>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-            <div className="group-field">
-              <label className="group-label">Name</label>
-              <input className="group-input" placeholder="e.g. Dinner, Airbnb" value={name}
-                onChange={e => setName(e.target.value)} required autoFocus />
+        <div className="group-modal group-root expense-modal" onClick={e => e.stopPropagation()}>
+          <form onSubmit={handleSubmit} className="expense-form-wrap">
+            <div className="group-modal-header">
+              <div className="group-modal-title">Add expense</div>
+              <button type="button" className="group-modal-close" onClick={onClose} aria-label="Close">✕</button>
             </div>
 
-            <div className="group-input-row">
-              <div className="group-field">
-                <label className="group-label">Amount</label>
-                <input className="group-input" type="number" step="0.01" min="0.01"
-                  placeholder="0.00" value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  required />
-              </div>
-              <div className="group-field">
-                <label className="group-label">Date</label>
-                <input className="group-input" type="date" value={date}
-                  onChange={e => setDate(e.target.value)} required />
-              </div>
-            </div>
+            <div className="expense-modal-body">
+              <div className="expense-form-grid">
+                <div className="group-field">
+                  <label className="group-label">Name</label>
+                  <input className="group-input" placeholder="e.g. Dinner, Airbnb" value={name}
+                    onChange={e => setName(e.target.value)} required autoFocus />
+                </div>
 
-            <div className="group-input-row">
-              <div className="group-field">
-                <label className="group-label">Paid by</label>
-                <Dropdown
-                  value={paidBy}
-                  onChange={setPaidBy}
-                  options={members.map(m => ({
-                    value: m.user_id,
-                    label: `${m.display_name}${m.user_id === currentUserId ? ' (You)' : ''}`,
-                    icon: <User size={13} />,
-                  }))}
-                />
-              </div>
-              <div className="group-field">
-                <label className="group-label">Category</label>
-                <CategoryDropdown value={categoryId} onChange={setCategoryId} />
-              </div>
-            </div>
+                <div className="group-field">
+                  <label className="group-label">Amount</label>
+                  <input className="group-input" type="number" step="0.01" min="0.01"
+                    placeholder="0.00" value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    required />
+                </div>
 
-            {paidBy === currentUserId && (
-              <div className="group-field">
-                <label className="group-label">Card (optional)</label>
-                <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
-              </div>
-            )}
+                <div className="group-field">
+                  <label className="group-label">Date</label>
+                  <input className="group-input" type="date" value={date}
+                    onChange={e => setDate(e.target.value)} required />
+                </div>
 
-            {/* Split section */}
-            <div className="group-field">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <label className="group-label" style={{ margin: 0 }}>Split</label>
-                <div className="split-mode-toggle">
-                  <button
-                    type="button"
-                    className={`split-mode-btn${splitMode === 'even' ? ' active' : ''}`}
-                    onClick={() => switchMode('even')}
-                  >
-                    Even
-                  </button>
-                  <button
-                    type="button"
-                    className={`split-mode-btn${splitMode === 'custom' ? ' active' : ''}`}
-                    onClick={() => switchMode('custom')}
-                  >
-                    Custom
-                  </button>
+                <div className="group-field">
+                  <label className="group-label">Category</label>
+                  <CategoryDropdown value={categoryId} onChange={setCategoryId} />
+                </div>
+
+                <div className="group-field">
+                  <label className="group-label">Paid by</label>
+                  <Dropdown
+                    value={paidBy}
+                    onChange={setPaidBy}
+                    options={members.map(m => ({
+                      value: m.user_id,
+                      label: `${m.display_name}${m.user_id === currentUserId ? ' (You)' : ''}`,
+                      icon: <User size={13} />,
+                    }))}
+                  />
+                </div>
+
+                {paidBy === currentUserId && (
+                  <div className="group-field">
+                    <label className="group-label">Card</label>
+                    <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
+                  </div>
+                )}
+
+                <div className="group-field note-field-mobile-hide">
+                  <label className="group-label">Note</label>
+                  <input className="group-input" placeholder="Optional" value={description}
+                    onChange={e => setDescription(e.target.value)} />
                 </div>
               </div>
 
-              <div className="group-amount-grid">
-                {splits.map(s => {
-                  const isInvolved = involved[s.user_id]
-                  const isEven = splitMode === 'even'
-                  return (
-                    <div
-                      key={s.user_id}
-                      className="group-amount-row"
-                      style={{ opacity: isInvolved ? 1 : 0.38, transition: 'opacity 0.15s' }}
+              {/* Split section */}
+              <div className="group-field" style={{ marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <label className="group-label" style={{ margin: 0 }}>Split</label>
+                  <div className="split-mode-toggle">
+                    <button
+                      type="button"
+                      className={`split-mode-btn${splitMode === 'even' ? ' active' : ''}`}
+                      onClick={() => switchMode('even')}
                     >
-                      {/* Checkbox */}
-                      <button
-                        type="button"
-                        className={`split-checkbox${isInvolved ? ' checked' : ''}`}
-                        onClick={() => toggleInvolved(s.user_id)}
-                        aria-label={isInvolved ? 'Exclude from split' : 'Include in split'}
+                      Even
+                    </button>
+                    <button
+                      type="button"
+                      className={`split-mode-btn${splitMode === 'custom' ? ' active' : ''}`}
+                      onClick={() => switchMode('custom')}
+                    >
+                      Custom
+                    </button>
+                  </div>
+                </div>
+
+                <div className="group-amount-grid">
+                  {splits.map(s => {
+                    const isInvolved = involved[s.user_id]
+                    const isEven = splitMode === 'even'
+                    return (
+                      <div
+                        key={s.user_id}
+                        className="group-amount-row"
+                        style={{ opacity: isInvolved ? 1 : 0.38, transition: 'opacity 0.15s' }}
                       >
-                        {isInvolved && (
-                          <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M1.5 4.5l2 2 4-4" />
-                          </svg>
-                        )}
-                      </button>
+                        {/* Checkbox */}
+                        <button
+                          type="button"
+                          className={`split-checkbox${isInvolved ? ' checked' : ''}`}
+                          onClick={() => toggleInvolved(s.user_id)}
+                          aria-label={isInvolved ? 'Exclude from split' : 'Include in split'}
+                        >
+                          {isInvolved && (
+                            <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1.5 4.5l2 2 4-4" />
+                            </svg>
+                          )}
+                        </button>
 
-                      <span className="group-amount-name" onClick={() => toggleInvolved(s.user_id)} style={{ cursor: 'pointer' }}>
-                        {s.display_name}{s.user_id === currentUserId ? ' (You)' : ''}
-                      </span>
+                        <span className="group-amount-name" onClick={() => toggleInvolved(s.user_id)} style={{ cursor: 'pointer' }}>
+                          {s.display_name}{s.user_id === currentUserId ? ' (You)' : ''}
+                        </span>
 
-                      <input
-                        className="group-amount-input"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={s.amount}
-                        readOnly={isEven || !isInvolved}
-                        disabled={!isInvolved}
-                        onChange={e => updateSplit(s.user_id, e.target.value)}
-                        style={{ opacity: isEven ? 0.6 : 1 }}
-                      />
-                    </div>
-                  )
-                })}
+                        <input
+                          className="group-amount-input"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={s.amount}
+                          readOnly={isEven || !isInvolved}
+                          disabled={!isInvolved}
+                          onChange={e => updateSplit(s.user_id, e.target.value)}
+                          style={{ opacity: isEven ? 0.6 : 1 }}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className={`group-sum-indicator ${splitOk ? 'ok' : 'error'}`} style={{ marginTop: 8 }}>
+                  <span>Total splits</span>
+                  <span>
+                    ${totalSplit.toFixed(2)} / ${expenseAmt.toFixed(2)}
+                    {splitOk ? ' ✓' : involvedSplits.length === 0 ? ' — select at least one member' : ' — must match'}
+                  </span>
+                </div>
               </div>
 
-              <div className={`group-sum-indicator ${splitOk ? 'ok' : 'error'}`} style={{ marginTop: 8 }}>
-                <span>Total splits</span>
-                <span>
-                  ${totalSplit.toFixed(2)} / ${expenseAmt.toFixed(2)}
-                  {splitOk ? ' ✓' : involvedSplits.length === 0 ? ' — select at least one member' : ' — must match'}
-                </span>
-              </div>
+              {error && <div className="group-error">{error}</div>}
             </div>
-
-            <div className="group-field">
-              <label className="group-label">Note (optional)</label>
-              <input className="group-input" placeholder="Add a note…" value={description}
-                onChange={e => setDescription(e.target.value)} />
-            </div>
-
-            {error && <div className="group-error">{error}</div>}
 
             <div className="group-modal-footer">
               <button type="button" className="group-btn-secondary" onClick={onClose}>Cancel</button>

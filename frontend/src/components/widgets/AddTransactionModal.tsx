@@ -115,15 +115,15 @@ export function AddTransactionModal({ onAdd, onClose }: Props) {
             </div>
 
             <form className="bud-form" onSubmit={handleSubmit}>
-              <input
-                required
-                placeholder="Name"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="bud-input"
-                autoFocus
-              />
-              <div className="bud-input-row">
+              <div className="bud-form-grid">
+                <input
+                  required
+                  placeholder="Name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="bud-input"
+                  autoFocus
+                />
                 <input
                   required
                   type="number"
@@ -141,15 +141,15 @@ export function AddTransactionModal({ onAdd, onClose }: Props) {
                   onChange={e => setDate(e.target.value)}
                   className="bud-input"
                 />
+                <CategoryDropdown value={categoryId} onChange={setCategoryId} />
+                <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
+                <input
+                  placeholder="Description (optional)"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  className="bud-input"
+                />
               </div>
-              <CategoryDropdown value={categoryId} onChange={setCategoryId} />
-              <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
-              <input
-                placeholder="Description (optional)"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                className="bud-input"
-              />
               {error && <p className="bud-error">{error}</p>}
               <div className="bud-modal-actions">
                 <button type="submit" disabled={loading} className="bud-modal-save">

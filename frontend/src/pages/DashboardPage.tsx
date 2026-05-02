@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
@@ -85,6 +85,18 @@ export default function DashboardPage() {
   const [viewYear, setViewYear] = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
   const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth()
+
+  const [spendingPeriod, setSpendingPeriod] = useState<'weekly' | 'biweekly' | 'monthly'>('monthly')
+  const spendingPeriodSeeded = useRef(false)
+  useEffect(() => {
+    const p = user?.preferences?.budget_period
+    if (!spendingPeriodSeeded.current && p) {
+      if (p === 'weekly' || p === 'biweekly' || p === 'monthly') {
+        spendingPeriodSeeded.current = true
+        setSpendingPeriod(p)
+      }
+    }
+  }, [user?.preferences?.budget_period])
 
   function prevMonth() {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
@@ -213,6 +225,7 @@ export default function DashboardPage() {
           budgetPeriod={user?.preferences?.budget_period}
           viewYear={viewYear}
           viewMonth={viewMonth}
+          period={spendingPeriod}
         />
       case 'recent_transactions':
         return <RecentTransactionsWidget transactions={transactions} loading={loadingTx} error={errorTx} size={w.size} onUpdate={handleUpdate} onDelete={handleDelete} />
@@ -292,6 +305,19 @@ export default function DashboardPage() {
             <button className="bud-month-today" onClick={goToCurrentMonth}>
               Today
             </button>
+          )}
+          {widgetsReady && widgets.some(w => w.type === 'spending_summary') && (
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 3 }}>
+              {(['weekly', 'biweekly', 'monthly'] as const).map(p => (
+                <button
+                  key={p}
+                  className={`bud-period-chip${spendingPeriod === p ? ' active' : ''}`}
+                  onClick={() => setSpendingPeriod(p)}
+                >
+                  {p === 'weekly' ? 'Weekly' : p === 'biweekly' ? 'Biweekly' : 'Monthly'}
+                </button>
+              ))}
+            </div>
           )}
         </div>
 

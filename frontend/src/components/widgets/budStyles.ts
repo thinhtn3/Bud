@@ -1064,7 +1064,9 @@ export const budStyles = `
 
   /* ── Form ─────────────────────────────────────────────── */
   .bud-form { display: flex; flex-direction: column; gap: 10px; }
-  .bud-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bud-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; width: 100%; }
+  .bud-form-grid > * { min-width: 0; }
+  .bud-input-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 
   .bud-input, .bud-select {
     width: 100%;
@@ -2351,13 +2353,14 @@ export const budStyles = `
     .bud-modal-title { font-size: 17px; }
     .bud-toggle { margin-top: 16px; margin-left: 16px; margin-right: 16px; padding: 4px; }
     .bud-toggle-btn { padding: 10px 0; font-size: 14px; }
-    .bud-form { padding: 16px; gap: 16px; }
+    .bud-form { padding: 16px; gap: 16px; width: 100%; box-sizing: border-box; }
+    .bud-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; width: 100%; }
     .bud-add-success { padding: 32px 16px; }
-    .bud-input-row { grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bud-input-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
     .bud-toggle--three .bud-toggle-btn { font-size: 13px; }
     .bud-modal-actions { margin-top: 8px; padding-bottom: 8px; }
-    .bud-input, .bud-select { font-size: 16px; padding: 12px 14px; height: 48px; }
-    .bud-submit { font-size: 16px; padding: 14px 24px; height: 48px; }
+    .bud-input, .bud-select { font-size: 14px; padding: 10px 12px; height: 42px; }
+    .bud-submit { font-size: 15px; padding: 12px 24px; height: 44px; }
     @keyframes bud-modal-slide-up {
       from { opacity: 0; transform: translateY(16px); }
       to   { opacity: 1; transform: translateY(0); }

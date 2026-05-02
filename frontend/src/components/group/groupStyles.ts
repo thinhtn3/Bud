@@ -1,5 +1,6 @@
 export const groupStyles = `
-  .group-root *, .group-root *::before, .group-root *::after {
+  .group-root *, .group-root *::before, .group-root *::after,
+  .group-modal-overlay *, .group-modal-overlay *::before, .group-modal-overlay *::after {
     font-family: 'Inter', -apple-system, system-ui, sans-serif;
     font-feature-settings: "cv01", "ss03";
     box-sizing: border-box;
@@ -374,10 +375,34 @@ export const groupStyles = `
     flex-direction: column;
     gap: 20px;
   }
+  .group-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
   .group-modal-title {
     font-size: 17px;
     font-weight: 700;
     color: #f7f8f8;
+  }
+  .group-modal-close {
+    background: rgba(247,248,248,0.04);
+    border: 1px solid rgba(247,248,248,0.08);
+    border-radius: 6px;
+    color: rgba(247,248,248,0.5);
+    font-size: 12px;
+    width: 28px; height: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+    font-family: 'Inter', sans-serif;
+    flex-shrink: 0;
+  }
+  .group-modal-close:hover {
+    color: #f7f8f8;
+    background: rgba(247,248,248,0.08);
   }
   .group-modal-footer {
     display: flex;
@@ -390,6 +415,7 @@ export const groupStyles = `
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0;
   }
   .group-label {
     font-size: 12px;
@@ -402,10 +428,15 @@ export const groupStyles = `
     border-radius: 10px;
     padding: 10px 14px;
     font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    height: 42px;
     color: #f7f8f8;
     outline: none;
     transition: border-color 0.15s;
     width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
   }
   .group-input:focus { border-color: rgba(159,232,112,0.4); }
   .group-input::placeholder { color: rgba(247,248,248,0.25); }
@@ -415,17 +446,22 @@ export const groupStyles = `
     border-radius: 10px;
     padding: 10px 14px;
     font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    height: 42px;
     color: #f7f8f8;
     outline: none;
     width: 100%;
     cursor: pointer;
     transition: border-color 0.15s;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
   }
   .group-select:focus { border-color: rgba(159,232,112,0.4); }
   .group-select option { background: #111214; }
   .group-input-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 10px;
   }
 
@@ -462,6 +498,7 @@ export const groupStyles = `
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 13px;
+    font-family: 'Inter', sans-serif;
     color: #f7f8f8;
     outline: none;
     width: 90px;
@@ -1495,6 +1532,49 @@ export const groupStyles = `
     cursor: default;
   }
 
+  /* ── Expense Modal Specifics ────────────────────────────── */
+  .group-modal.expense-modal {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .expense-form-wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  .expense-modal .group-modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(247,248,248,0.08);
+  }
+  .expense-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+  }
+  .expense-form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .split-section-wrap {
+    margin-top: 4px;
+  }
+  .expense-modal .group-modal-footer {
+    padding: 16px 24px 20px;
+    border-top: 1px solid rgba(247,248,248,0.08);
+    background: #111214;
+  }
+  .group-input-row.single-col {
+    grid-template-columns: 1fr;
+  }
+
   /* ── Group modal: full-screen on mobile ─────────────────── */
   @media (max-width: 640px) {
     .group-modal-overlay {
@@ -1515,29 +1595,74 @@ export const groupStyles = `
       animation: group-modal-slide-up 0.22s cubic-bezier(0.32,0.72,0,1);
       padding-bottom: env(safe-area-inset-bottom);
     }
-    .group-modal-title {
+    .group-modal-header {
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 10;
       flex-shrink: 0;
       background: #111214;
       margin: 0;
       padding: 14px 16px;
       border-bottom: 1px solid rgba(247,248,248,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    .group-modal > form { padding: 16px; gap: 12px !important; }
-    .group-input-row { grid-template-columns: 1fr; gap: 12px; }
+    .group-modal-title {
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+      border-bottom: none;
+      position: static;
+      background: transparent;
+    }
+    .group-input, .group-select { font-size: 14px; padding: 10px 12px; height: 40px; }
     .group-modal-footer {
       justify-content: stretch;
       padding-top: 4px;
+      gap: 10px;
     }
     .group-modal-footer .group-btn-primary,
     .group-modal-footer .group-btn-secondary {
       flex: 1;
+      font-size: 14px;
+      padding: 10px 16px;
+      height: 40px;
     }
     @keyframes group-modal-slide-up {
       from { opacity: 0; transform: translateY(16px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+    .expense-modal .group-modal-header {
+      padding: 14px 16px;
+      background: #111214;
+      position: relative; /* no longer sticky needed since body scrolls */
+    }
+    .expense-modal-body {
+      padding: 16px;
+      gap: 14px;
+    }
+    .expense-form-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+    }
+    .note-field-mobile-hide {
+      display: none !important;
+    }
+    .expense-modal .group-modal-footer {
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+    /* Reduce input heights slightly on mobile to fit more */
+    .group-input, .group-select {
+      height: 40px;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+    .group-amount-input {
+      height: 34px;
+      font-size: 13px;
     }
   }
 `
