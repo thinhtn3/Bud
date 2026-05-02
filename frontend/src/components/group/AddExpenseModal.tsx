@@ -147,7 +147,7 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
                 onChange={e => setName(e.target.value)} required autoFocus />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="group-input-row">
               <div className="group-field">
                 <label className="group-label">Amount</label>
                 <input className="group-input" type="number" step="0.01" min="0.01"
@@ -162,7 +162,7 @@ export default function AddExpenseModal({ open, onClose, members, groupId, curre
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="group-input-row">
               <div className="group-field">
                 <label className="group-label">Paid by</label>
                 <Dropdown

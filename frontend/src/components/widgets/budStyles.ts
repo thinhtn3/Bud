@@ -6,7 +6,8 @@ export const budStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
   /* ── Reset & Root ─────────────────────────────────────── */
-  .bud-root *, .bud-root *::before, .bud-root *::after {
+  .bud-root *, .bud-root *::before, .bud-root *::after,
+  .bud-modal-overlay *, .bud-modal-overlay *::before, .bud-modal-overlay *::after {
     font-family: 'Inter', -apple-system, system-ui, sans-serif;
     font-feature-settings: "cv01", "ss03";
     box-sizing: border-box;
@@ -93,12 +94,17 @@ export const budStyles = `
   /* ── Header ───────────────────────────────────────────── */
   .bud-header {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 14px;
-    padding-bottom: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
     border-bottom: 1px solid rgba(255,255,255,0.05);
     max-width: 1280px;
+  }
+  .bud-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
   }
 
   /* ── Month navigator ──────────────────────────────────── */
@@ -158,24 +164,26 @@ export const budStyles = `
     border-color: rgba(255,209,26,0.32);
   }
   .bud-greeting {
+    font-size: 14px;
+    font-weight: 400;
+    color: #8a8f98;
+    letter-spacing: -0.14px;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .bud-name {
+    font-size: 24px;
+    font-weight: 600;
+    color: #f7f8f8;
+    letter-spacing: -0.48px;
+    line-height: 1.2;
+  }
+  .bud-email {
     font-size: 13px;
     font-weight: 400;
     color: #62666d;
     letter-spacing: -0.13px;
-  }
-  .bud-name {
-    font-size: 16px;
-    font-weight: 590;
-    color: #f7f8f8;
-    letter-spacing: -0.32px;
-    line-height: 1.3;
-  }
-  .bud-email {
-    font-size: 12px;
-    font-weight: 400;
-    color: #4a4f57;
-    letter-spacing: -0.13px;
-    margin-top: 2px;
+    margin-top: 4px;
   }
   .bud-signout {
     background: rgba(255,255,255,0.02);
@@ -314,6 +322,7 @@ export const budStyles = `
     .bud-inco-amount { font-size: 14px; }
     .bud-widget-title { font-size: 15px; }
     .bud-stat-sub { font-size: 11px; }
+
   }
 
   /* ── Edit mode ────────────────────────────────────────── */
@@ -1059,12 +1068,17 @@ export const budStyles = `
 
   .bud-input, .bud-select {
     width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 10px;
     padding: 10px 14px;
     font-size: 14px;
     line-height: 1.42857;
+    height: 42px;
     font-weight: 400;
     font-feature-settings: "cv01","ss03";
     font-family: 'Inter', sans-serif;
@@ -1093,6 +1107,7 @@ export const budStyles = `
     border: none;
     border-radius: 9999px;
     padding: 11px 24px;
+    height: 42px;
     font-size: 14px;
     font-weight: 600;
     font-feature-settings: "cv01","ss03";
@@ -2280,5 +2295,72 @@ export const budStyles = `
   .bud-modal-secondary:hover {
     background: rgba(255,255,255,0.07);
     color: #c8cdd6;
+  }
+
+  /* ── Mobile Modal Overrides ───────────────────────────── */
+  @media (max-width: 640px) {
+    .bud-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .bud-header-actions {
+      width: 100%;
+    }
+    .bud-header-actions .bud-add-widget-btn,
+    .bud-header-actions .bud-edit-btn {
+      flex: 1;
+      justify-content: center;
+      padding: 10px 14px;
+    }
+
+    .bud-modal-overlay {
+      padding: 0;
+      align-items: flex-start;
+      justify-content: center;
+      overscroll-behavior: contain;
+    }
+    .bud-modal {
+      width: 100%;
+      max-width: none;
+      height: 100dvh;
+      max-height: 100dvh;
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      animation: bud-modal-slide-up 0.22s cubic-bezier(0.32,0.72,0,1);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bud-modal::before { display: none; }
+    .bud-modal-header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      flex-shrink: 0;
+      background: #0f1011;
+      margin-bottom: 0;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .bud-modal-title { font-size: 17px; }
+    .bud-toggle { margin-top: 16px; margin-left: 16px; margin-right: 16px; padding: 4px; }
+    .bud-toggle-btn { padding: 10px 0; font-size: 14px; }
+    .bud-form { padding: 16px; gap: 16px; }
+    .bud-add-success { padding: 32px 16px; }
+    .bud-input-row { grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bud-toggle--three .bud-toggle-btn { font-size: 13px; }
+    .bud-modal-actions { margin-top: 8px; padding-bottom: 8px; }
+    .bud-input, .bud-select { font-size: 16px; padding: 12px 14px; height: 48px; }
+    .bud-submit { font-size: 16px; padding: 14px 24px; height: 48px; }
+    @keyframes bud-modal-slide-up {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
   }
 `

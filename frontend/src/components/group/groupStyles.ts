@@ -423,6 +423,11 @@ export const groupStyles = `
   }
   .group-select:focus { border-color: rgba(159,232,112,0.4); }
   .group-select option { background: #111214; }
+  .group-input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
 
   /* ── Split Amount Row (in AddExpenseModal) ────────────────── */
   .group-amount-grid {
@@ -1488,5 +1493,51 @@ export const groupStyles = `
   .gs-remove-btn:disabled {
     opacity: 0.4;
     cursor: default;
+  }
+
+  /* ── Group modal: full-screen on mobile ─────────────────── */
+  @media (max-width: 640px) {
+    .group-modal-overlay {
+      padding: 0;
+      align-items: stretch;
+      justify-content: stretch;
+      overscroll-behavior: contain;
+    }
+    .group-modal {
+      width: 100%;
+      max-width: none;
+      height: 100dvh;
+      max-height: 100dvh;
+      border-radius: 0;
+      border: none;
+      padding: 0;
+      gap: 0;
+      animation: group-modal-slide-up 0.22s cubic-bezier(0.32,0.72,0,1);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .group-modal-title {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      flex-shrink: 0;
+      background: #111214;
+      margin: 0;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(247,248,248,0.08);
+    }
+    .group-modal > form { padding: 16px; gap: 12px !important; }
+    .group-input-row { grid-template-columns: 1fr; gap: 12px; }
+    .group-modal-footer {
+      justify-content: stretch;
+      padding-top: 4px;
+    }
+    .group-modal-footer .group-btn-primary,
+    .group-modal-footer .group-btn-secondary {
+      flex: 1;
+    }
+    @keyframes group-modal-slide-up {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
   }
 `

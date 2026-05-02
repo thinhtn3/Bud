@@ -238,24 +238,23 @@ export default function DashboardPage() {
         <div className="bud-bg-blob bud-bg-blob-2" />
         <div className="bud-bg-blob bud-bg-blob-3" />
         <header className="bud-header">
-          <div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span className="bud-greeting">Good {getTimeOfDay()},</span>
+          <div className="bud-header-user">
+            <span className="bud-greeting">Good {getTimeOfDay()},</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <h1 className="bud-name">{user?.display_name}</h1>
               <button
                 className="bud-prefs-trigger"
                 onClick={() => setPrefsOpen(true)}
                 aria-label="Open preferences"
-                style={{ alignSelf: 'center' }}
               >
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <svg width="14" height="14" viewBox="0 0 13 13" fill="none">
                   <path d="M9.5 1.5a1.414 1.414 0 0 1 2 2L4 11H1.5V8.5L9.5 1.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
             </div>
             <p className="bud-email">{user?.email}</p>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="bud-header-actions">
             {widgets.length > 0 && (
               <>
                 <button className="bud-add-widget-btn" onClick={() => setPickerOpen(true)}>
