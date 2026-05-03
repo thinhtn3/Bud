@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { Plus } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import type { Transaction } from '@/types'
@@ -19,8 +20,6 @@ import { parseLocalDate, formatMonthYear } from '@/lib/dateUtils'
 import { PreferencesModal } from '@/components/PreferencesModal'
 import { Navbar } from '@/components/Navbar'
 
-const STORAGE_KEY = 'bud-dashboard-widgets'
-
 const DEFAULT_SKELETON_LAYOUT: WidgetInstance[] = [
   { id: 'skel-1', type: 'spending_summary',    size: 'medium' },
   { id: 'skel-2', type: 'recent_transactions', size: 'medium' },
@@ -28,24 +27,6 @@ const DEFAULT_SKELETON_LAYOUT: WidgetInstance[] = [
   { id: 'skel-4', type: 'card_spending',       size: 'medium' },
 ]
 
-function loadLocalWidgets(): WidgetInstance[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (!saved) return []
-    return JSON.parse(saved).map((w: Record<string, unknown>) => {
-      if (w.size) return w as WidgetInstance
-      const cols = (w.cols as number) ?? 6
-      const size: WidgetSize = cols >= 10 ? 'large' : cols >= 4 ? 'medium' : 'small'
-      return { id: w.id as string, type: w.type as WidgetType, size }
-    })
-  } catch {
-    return []
-  }
-}
-
-function saveLocalWidgets(widgets: WidgetInstance[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets))
-}
 
 // Convert WidgetInstance[] → backend PUT payload
 function toPayload(widgets: WidgetInstance[]) {
@@ -112,6 +93,13 @@ export default function DashboardPage() {
     setViewMonth(now.getMonth())
   }
 
+  // Listen for mobile navbar add button
+  useEffect(() => {
+    const handleOpenAdd = () => setAddOpen(true)
+    window.addEventListener('open-add-tx', handleOpenAdd)
+    return () => window.removeEventListener('open-add-tx', handleOpenAdd)
+  }, [])
+
   // Load widgets + user: runs once on mount
   useEffect(() => {
     refreshUser()
@@ -119,22 +107,8 @@ export default function DashboardPage() {
     api.get<{ id: string; type: string; size: string; position: number }[]>('/api/dashboard/widgets')
       .then(data => {
         if (data.length > 0) {
-          // Backend has widgets — use them
-          const w = fromBackend(data)
-          setWidgets(w)
-          saveLocalWidgets(w)
-        } else {
-          // Backend empty — check localStorage for one-time migration
-          const local = loadLocalWidgets()
-          if (local.length > 0) {
-            setWidgets(local)
-            syncToBackend(local)
-          }
+          setWidgets(fromBackend(data))
         }
-      })
-      .catch(() => {
-        // Backend unreachable — fall back to localStorage
-        setWidgets(loadLocalWidgets())
       })
       .finally(() => setWidgetsReady(true))
   }, [])
@@ -179,7 +153,6 @@ export default function DashboardPage() {
 
   const handleReorder = useCallback((newOrder: WidgetInstance[]) => {
     setWidgets(newOrder)
-    saveLocalWidgets(newOrder)
     syncToBackend(newOrder)
   }, [])
 
@@ -197,7 +170,6 @@ export default function DashboardPage() {
     }
     setWidgets(prev => {
       const next = [...prev, instance]
-      saveLocalWidgets(next)
       syncToBackend(next)
       return next
     })
@@ -206,7 +178,6 @@ export default function DashboardPage() {
   const removeWidget = useCallback((id: string) => {
     setWidgets(prev => {
       const next = prev.filter(w => w.id !== id)
-      saveLocalWidgets(next)
       syncToBackend(next)
       if (next.length === 0) setEditMode(false)
       return next
@@ -323,7 +294,7 @@ export default function DashboardPage() {
 
         {!widgetsReady ? (
           <WidgetGrid>
-            {(loadLocalWidgets().length > 0 ? loadLocalWidgets() : DEFAULT_SKELETON_LAYOUT).map(w => (
+            {DEFAULT_SKELETON_LAYOUT.map(w => (
               <WidgetCell key={w.id} size={w.size}>
                 <div className="bud-widget-wrapper" style={{ position: 'relative', height: '100%' }}>
                   <WidgetSkeleton type={w.type} size={w.size} />
@@ -420,9 +391,11 @@ export default function DashboardPage() {
         {prefsOpen && <PreferencesModal onClose={() => setPrefsOpen(false)} />}
         {addOpen && <AddTransactionModal onAdd={handleAdd} onClose={() => setAddOpen(false)} />}
       </div>
-
+      
+      {/* Desktop FAB (hidden on mobile) */}
       <button className="bud-fab" onClick={() => setAddOpen(true)} aria-label="Add transaction">
-        +
+        <Plus size={18} strokeWidth={2.5} />
+        <span>New transaction</span>
       </button>
     </>
   )

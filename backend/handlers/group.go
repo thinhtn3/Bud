@@ -808,11 +808,15 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 	}
 
 	var req struct {
-		ToUserID string  `json:"to_user_id" binding:"required"`
-		Amount   float64 `json:"amount" binding:"required,gt=0"`
-		Date     string  `json:"date"`
-		Note     *string `json:"note"`
-		Pardon   bool    `json:"pardon"`
+		ToUserID    string  `json:"to_user_id" binding:"required"`
+		Amount      float64 `json:"amount" binding:"required,gt=0"`
+		Date        string  `json:"date"`
+		Name        string  `json:"name"`
+		Description *string `json:"description"`
+		CategoryID  *string `json:"category_id"`
+		CardAliasID *string `json:"card_alias_id"`
+		Note        *string `json:"note"`
+		Pardon      bool    `json:"pardon"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -866,13 +870,19 @@ func (h *GroupHandler) CreateSettlement(c *gin.Context) {
 			return nil
 		}
 		// Normal settlement: create personal dashboard transactions
-		settlementName := "Settlement · " + group.Name
+		settlementName := req.Name
+		if settlementName == "" {
+			settlementName = "Settlement · " + group.Name
+		}
 		fromTx := models.Transaction{
 			UserID:            fromUser,
 			Type:              models.TransactionTypeExpense,
 			Name:              settlementName,
+			Description:       req.Description,
 			Amount:            req.Amount,
 			Date:              date,
+			CategoryID:        req.CategoryID,
+			CardAliasID:       req.CardAliasID,
 			GroupSettlementID: &s.ID,
 		}
 		if err := tx.Create(&fromTx).Error; err != nil {

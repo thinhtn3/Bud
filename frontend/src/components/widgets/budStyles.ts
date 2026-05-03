@@ -251,8 +251,40 @@ export const budStyles = `
     /* Hide desktop sidebar */
     .bud-navbar { display: none !important; }
 
-    /* Lift FAB above the bottom tab bar */
-    .bud-fab { bottom: 88px; }
+    /* Hide desktop FAB on mobile */
+    .bud-fab {
+      display: none !important;
+    }
+
+    /* Mobile Navbar Add Button (embedded in navbar) */
+    .bud-nav-fab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #9fe870;
+      color: #163300;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(159,232,112,0.2);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .bud-nav-fab:hover {
+      transform: scale(1.05);
+    }
+    .bud-nav-fab:active {
+      transform: scale(0.96);
+    }
+    .bud-bottom-nav-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      flex-shrink: 0;
+      margin-top: -12px; /* Pulls it slightly up from the navbar center */
+    }
 
     /* Bottom tab bar */
     .bud-bottom-nav {
@@ -264,8 +296,12 @@ export const budStyles = `
       height: 64px;
       background: #0f1011;
       border-top: 1px solid rgba(255, 255, 255, 0.06);
-      z-index: 50;
+      z-index: 500;
       padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bud-bottom-nav-spacer {
+      width: 64px;
+      flex-shrink: 0;
     }
     .bud-bottom-nav-item {
       flex: 1;
@@ -2239,17 +2275,18 @@ export const budStyles = `
     position: fixed;
     bottom: 32px;
     right: 32px;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
+    padding: 14px 20px;
+    border-radius: 9999px;
     background: #9fe870;
     color: #163300;
     border: none;
-    font-size: 24px;
-    line-height: 1;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     cursor: pointer;
     box-shadow: 0 4px 24px rgba(159,232,112,0.30), 0 2px 8px rgba(0,0,0,0.35);
     transition: transform 0.15s, box-shadow 0.15s;

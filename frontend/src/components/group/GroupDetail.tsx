@@ -437,6 +437,7 @@ export default function GroupDetail({ groupId, currentUserId, onBack }: Props) {
           balances={balances}
           currentUserId={currentUserId}
           groupId={groupId}
+          groupName={group.name}
           onSettled={handleSettled}
           onSettlementDeleted={handleSettlementDeleted}
         />

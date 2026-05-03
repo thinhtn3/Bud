@@ -103,16 +103,30 @@ export function Navbar() {
 
       {/* Mobile bottom tab bar */}
       <nav className="bud-bottom-nav">
-        {navItems.map((item) => (
-          <button
-            key={item.path}
-            className={`bud-bottom-nav-item${isActive(item.path) ? ' bud-bottom-nav-item--active' : ''}`}
-            onClick={() => navigate(item.path)}
-            aria-label={item.label}
-          >
-            <span className="bud-bottom-nav-icon">{item.icon}</span>
-            <span className="bud-bottom-nav-label">{item.label}</span>
-          </button>
+        {navItems.map((item, idx) => (
+          <div key={item.path} style={{ display: 'contents' }}>
+            <button
+              className={`bud-bottom-nav-item${isActive(item.path) ? ' bud-bottom-nav-item--active' : ''}`}
+              onClick={() => navigate(item.path)}
+              aria-label={item.label}
+            >
+              <span className="bud-bottom-nav-icon">{item.icon}</span>
+              <span className="bud-bottom-nav-label">{item.label}</span>
+            </button>
+            {idx === 0 && (
+              <div className="bud-bottom-nav-center">
+                <button 
+                  className="bud-nav-fab" 
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-add-tx'))}
+                  aria-label="Add transaction"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
         ))}
       </nav>
     </>

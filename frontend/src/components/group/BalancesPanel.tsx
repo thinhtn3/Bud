@@ -3,11 +3,15 @@ import { createPortal } from 'react-dom'
 import { api } from '../../lib/api'
 import type { GroupBalances, SettlementRecord } from '../../types'
 import { groupStyles } from './groupStyles'
+import { useAuth } from '../../context/AuthContext'
+import { CategoryDropdown } from '../widgets/CategoryDropdown'
+import { CardAliasDropdown } from '../widgets/CardAliasDropdown'
 
 interface Props {
   balances: GroupBalances
   currentUserId: string
   groupId: string
+  groupName: string
   onSettled: (record: SettlementRecord) => void
   onSettlementDeleted: (id: string) => void
 }
@@ -25,6 +29,7 @@ interface SettleModalProps {
   toDisplayName: string
   defaultAmount: number
   groupId: string
+  groupName: string
   pardon?: boolean
   onSettled: (record: SettlementRecord) => void
   onClose: () => void
@@ -34,10 +39,16 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, pardon, onSettled, onClose }: SettleModalProps) {
+function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, groupName, pardon, onSettled, onClose }: SettleModalProps) {
+  const { user } = useAuth()
+  const defaultCard = user?.preferences?.default_card_alias_id ?? ''
+
+  const [name, setName] = useState(`Settlement · ${groupName}`)
   const [amount, setAmount] = useState(defaultAmount.toFixed(2))
-  const [note, setNote] = useState('')
   const [date, setDate] = useState(todayStr())
+  const [categoryId, setCategoryId] = useState('')
+  const [cardAliasId, setCardAliasId] = useState(defaultCard)
+  const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -50,7 +61,10 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, pardon, 
         to_user_id: toUserID,
         amount: parseFloat(amount),
         date,
-        ...(note.trim() ? { note: note.trim() } : {}),
+        name: name.trim() || undefined,
+        description: description.trim() || undefined,
+        category_id: categoryId || undefined,
+        card_alias_id: cardAliasId || undefined,
         ...(pardon ? { pardon: true } : {}),
       })
       onSettled(record)
@@ -68,6 +82,17 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, pardon, 
         <div className="group-modal group-root" onClick={e => e.stopPropagation()}>
           <div className="group-modal-title">{pardon ? `Pardon ${toDisplayName}` : `Settle up with ${toDisplayName}`}</div>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="group-field">
+              <label className="group-label">Name</label>
+              <input
+                className="group-input"
+                placeholder="Settlement name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div className="group-field">
                 <label className="group-label">Amount</label>
@@ -78,7 +103,6 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, pardon, 
                   min="0.01"
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
-                  autoFocus
                   required
                 />
               </div>
@@ -94,12 +118,20 @@ function SettleModal({ toUserID, toDisplayName, defaultAmount, groupId, pardon, 
               </div>
             </div>
             <div className="group-field">
-              <label className="group-label">Note (optional)</label>
+              <label className="group-label">Category</label>
+              <CategoryDropdown value={categoryId} onChange={setCategoryId} />
+            </div>
+            <div className="group-field">
+              <label className="group-label">Card</label>
+              <CardAliasDropdown value={cardAliasId} onChange={setCardAliasId} />
+            </div>
+            <div className="group-field">
+              <label className="group-label">Description (optional)</label>
               <input
                 className="group-input"
-                placeholder="e.g. Venmo'd, Cash at dinner…"
-                value={note}
-                onChange={e => setNote(e.target.value)}
+                placeholder="Add a description…"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
               />
             </div>
             {error && <div className="group-error">{error}</div>}
@@ -196,7 +228,7 @@ function DeleteSettlementModal({ settlement, groupId, onDeleted, onClose }: Dele
   )
 }
 
-export default function BalancesPanel({ balances, currentUserId, groupId, onSettled, onSettlementDeleted }: Props) {
+export default function BalancesPanel({ balances, currentUserId, groupId, groupName, onSettled, onSettlementDeleted }: Props) {
   const { net_balances, settlements, history } = balances
   const [settling, setSettling] = useState<{ toUserID: string; toDisplayName: string; amount: number; pardon?: boolean } | null>(null)
   const [deletingSettlement, setDeletingSettlement] = useState<SettlementRecord | null>(null)
@@ -254,32 +286,32 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
               const owedToYou = s.to_user_id === currentUserId
               return (
                 <div key={i} className={`group-settlement-row${isYou || owedToYou ? ' involves-you' : ''}`}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                    <span className="group-settlement-from">{s.from_display_name || 'Unknown'}</span>
-                    <span style={{ color: 'rgba(247,248,248,0.35)' }}>pays</span>
-                    <span className="group-settlement-to">{s.to_display_name || 'Unknown'}</span>
+                  <div className="group-settlement-info">
+                    <div className="group-settlement-parties">
+                      <span className="group-settlement-from">{s.from_display_name || 'Unknown'}</span>
+                      <span className="group-settlement-arrow">→</span>
+                      <span className="group-settlement-to">{s.to_display_name || 'Unknown'}</span>
+                    </div>
                     <span className="group-settlement-amount">{fmt(s.amount)}</span>
                   </div>
-                  {isYou && (
-                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                      <button
-                        className="group-btn-primary"
-                        style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7 }}
-                        onClick={() => setSettling({ toUserID: s.to_user_id, toDisplayName: s.to_display_name, amount: s.amount })}
-                      >
-                        Settle up
-                      </button>
-                    </div>
-                  )}
-                  {owedToYou && (
-                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                      <button
-                        className="group-btn-ghost"
-                        style={{ padding: '5px 12px', fontSize: 11, borderRadius: 7, color: 'rgba(247,248,248,0.5)' }}
-                        onClick={() => setSettling({ toUserID: s.from_user_id, toDisplayName: s.from_display_name, amount: s.amount, pardon: true })}
-                      >
-                        Pardon
-                      </button>
+                  {(isYou || owedToYou) && (
+                    <div className="group-settlement-actions">
+                      {isYou && (
+                        <button
+                          className="group-btn-primary"
+                          onClick={() => setSettling({ toUserID: s.to_user_id, toDisplayName: s.to_display_name, amount: s.amount })}
+                        >
+                          Settle up
+                        </button>
+                      )}
+                      {owedToYou && (
+                        <button
+                          className="group-btn-ghost"
+                          onClick={() => setSettling({ toUserID: s.from_user_id, toDisplayName: s.from_display_name, amount: s.amount, pardon: true })}
+                        >
+                          Pardon
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -345,6 +377,7 @@ export default function BalancesPanel({ balances, currentUserId, groupId, onSett
           toDisplayName={settling.toDisplayName}
           defaultAmount={settling.amount}
           groupId={groupId}
+          groupName={groupName}
           pardon={settling.pardon}
           onSettled={record => { onSettled(record); setSettling(null) }}
           onClose={() => setSettling(null)}

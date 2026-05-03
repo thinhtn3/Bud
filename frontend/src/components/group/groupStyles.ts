@@ -270,11 +270,6 @@ export const groupStyles = `
     flex: 1;
     min-width: 0;
   }
-  @media (max-width: 640px) {
-    .balances-columns {
-      flex-direction: column;
-    }
-  }
 
   /* ── Balance Row ──────────────────────────────────────────── */
   .group-balance-row {
@@ -291,7 +286,7 @@ export const groupStyles = `
     background: rgba(247,248,248,0.05);
   }
   .group-balance-name {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     color: #f7f8f8;
     display: flex;
@@ -307,7 +302,7 @@ export const groupStyles = `
     border-radius: 4px;
   }
   .group-balance-amount {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
   }
   .group-balance-amount.positive { color: #9fe870; }
@@ -318,27 +313,59 @@ export const groupStyles = `
   .group-settlement-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
     padding: 12px 16px;
     border-radius: 12px;
     background: rgba(247,248,248,0.03);
     border: 1px solid rgba(247,248,248,0.06);
-    font-size: 13px;
+    font-size: 14px;
     color: rgba(247,248,248,0.6);
   }
   .group-settlement-row.involves-you {
     background: rgba(255,107,107,0.05);
     border-color: rgba(255,107,107,0.15);
   }
-  .group-settlement-from { font-weight: 600; color: #f7f8f8; }
-  .group-settlement-to { font-weight: 600; color: #f7f8f8; }
+  .group-settlement-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .group-settlement-parties {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .group-settlement-from { font-weight: 600; color: #f7f8f8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+  .group-settlement-to { font-weight: 600; color: #f7f8f8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+  .group-settlement-arrow { color: rgba(247,248,248,0.3); font-size: 12px; }
   .group-settlement-amount {
     margin-left: auto;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     color: #ff6b6b;
   }
   .group-settlement-row.involves-you .group-settlement-amount { color: #ff6b6b; }
+  .group-settlement-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .group-settlement-actions .group-btn-primary {
+    padding: 5px 12px;
+    font-size: 11px;
+    border-radius: 7px;
+  }
+  .group-settlement-actions .group-btn-ghost {
+    padding: 5px 12px;
+    font-size: 11px;
+    border-radius: 7px;
+    color: rgba(247,248,248,0.5);
+  }
 
   /* ── Section Header ───────────────────────────────────────── */
   .group-section-header {
@@ -348,6 +375,53 @@ export const groupStyles = `
     text-transform: uppercase;
     color: rgba(247,248,248,0.3);
     margin-bottom: 8px;
+  }
+
+  @media (max-width: 640px) {
+    .balances-columns {
+      flex-direction: row;
+      gap: 12px;
+    }
+    .group-balance-row {
+      padding: 8px 10px;
+    }
+    .group-balance-name {
+      font-size: 12px;
+    }
+    .group-balance-amount {
+      font-size: 13px;
+    }
+    .group-settlement-row {
+      padding: 10px 12px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .group-settlement-info {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .group-settlement-parties {
+      width: 100%;
+    }
+    .group-settlement-from, .group-settlement-to {
+      max-width: 70px;
+      font-size: 12px;
+    }
+    .group-settlement-amount {
+      margin-left: 0;
+      font-size: 14px;
+    }
+    .group-settlement-actions {
+      width: 100%;
+    }
+    .group-settlement-actions .group-btn-primary,
+    .group-settlement-actions .group-btn-ghost {
+      flex: 1;
+      justify-content: center;
+      padding: 8px;
+    }
   }
 
   /* ── Modal ────────────────────────────────────────────────── */
